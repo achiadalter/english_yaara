@@ -129,6 +129,7 @@ const el=id=>document.getElementById(id);
 const $=(s,r=document)=>r.querySelector(s);
 const app=el('app');
 const DAY=86400000, now=()=>Date.now();
+const APP_VER='v3';
 const WORDS=(window.VOCAB&&window.VOCAB.words)||[];
 const byId=Object.fromEntries(WORDS.map(w=>[w.id,w]));
 
@@ -155,7 +156,7 @@ const ENEMIES=[
 const KEY='wb_state_v2';
 function blank(){return{
   profile:null,
-  settings:{sfx:true,speech:true,aiProvider:'off',aiKey:''},
+  settings:{sfx:true,speech:true,timer:'slow',aiProvider:'off',aiKey:''},
   prog:{},
   stats:{streak:0,lastDay:null,minutes:0,correct:0,total:0,trophies:0,coins:0,gems:0,xp:0,bestCombo:0,wins:0},
   chars:{owned:['sparky'],sel:'sparky'},
@@ -199,7 +200,21 @@ function pickDaily(n=14){
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
 function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function show(html){app.innerHTML=html;window.scrollTo(0,0);}
-function speak(t){if(!S.settings.speech||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+let VOICES=[];
+function loadVoices(){try{VOICES=window.speechSynthesis?speechSynthesis.getVoices()||[]:[];}catch(e){VOICES=[];}}
+if(window.speechSynthesis){loadVoices();try{speechSynthesis.onvoiceschanged=loadVoices;}catch(e){}}
+function speak(t){
+  if(!S.settings.speech||!window.speechSynthesis)return;
+  try{
+    if(!VOICES.length)loadVoices();
+    const u=new SpeechSynthesisUtterance(String(t));u.lang='en-US';u.rate=.85;
+    const v=VOICES.find(x=>/en[-_]?US/i.test(x.lang))||VOICES.find(x=>/^en/i.test(x.lang));
+    if(v)u.voice=v;
+    if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();
+    speechSynthesis.resume();
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
 window._spk=t=>speak(t);
 /* audio sfx */
 let AC=null;
@@ -277,6 +292,7 @@ function screenHome(){checkStreak();const c=charById[S.chars.sel]||CHARS[0];
     <div class="center" style="margin-top:10px">
       <a class="link" onclick="parentGate()">👨‍👩‍👧 הורים</a> &nbsp;·&nbsp; <a class="link" onclick="screenSettings()">⚙️ הגדרות</a>
     </div>
+    <div class="center" style="margin-top:14px"><small class="muted">Word Brawl ${APP_VER}</small></div>
   </div>`);}
 
 /* ---------- BATTLE ---------- */
@@ -348,9 +364,14 @@ function arena(w,body,dur,after){
       <div class="bar timebar" style="margin-top:14px"><i id="tbar" style="width:100%"></i></div></div>
     <div class="center" style="margin-top:8px"><span class="chip">${c.emoji} ${c.name}</span> <span class="hearts">${hearts}</span></div>
   </div>`);
-  BT.cur=w.id;BT.tmax=dur;BT.tl=dur;stopTimer();
-  BT.timer=setInterval(()=>{BT.tl-=100;const tb=el('tbar');if(tb)tb.style.width=Math.max(0,BT.tl/BT.tmax*100)+'%';
-    if(BT.tl<=0){stopTimer();if(!BT.answered)timeUp(w.id);}},100);
+  BT.cur=w.id;stopTimer();
+  const pace=S.settings.timer||'slow';
+  const factor=pace==='normal'?1:pace==='slow'?1.7:0;   // 0 = no timer
+  if(factor===0){BT.noTimer=true;BT.tmax=dur;BT.tl=dur;
+    const tb=el('tbar');if(tb&&tb.parentElement)tb.parentElement.style.display='none';
+  }else{BT.noTimer=false;BT.tmax=Math.round(dur*factor);BT.tl=BT.tmax;
+    BT.timer=setInterval(()=>{BT.tl-=100;const tb=el('tbar');if(tb)tb.style.width=Math.max(0,BT.tl/BT.tmax*100)+'%';
+      if(BT.tl<=0){stopTimer();if(!BT.answered)timeUp(w.id);}},100);}
   if(after)after();
 }
 function battleRound(){
@@ -386,7 +407,7 @@ function timeUp(wid){if(BT.answered)return;
 function resolve(ok,wid){
   if(BT.answered)return;BT.answered=true;stopTimer();BT.total++;grade(wid,ok);
   if(ok){BT.correct++;BT.combo++;if(BT.combo>S.stats.bestCombo)S.stats.bestCombo=BT.combo;
-    const speed=Math.max(0,BT.tl/BT.tmax);const mult=1+Math.min(BT.combo-1,8)*0.25;const dmg=Math.round((16+speed*10)*mult);
+    const speed=BT.noTimer?0.5:Math.max(0,BT.tl/BT.tmax);const mult=1+Math.min(BT.combo-1,8)*0.25;const dmg=Math.round((16+speed*10)*mult);
     BT.hp-=dmg;speak(byId[wid].word);sfx('correct');if(BT.combo>=2)sfx('combo',BT.combo);
     const mon=el('mon');if(mon)mon.classList.add('hit');popDmg(dmg);
     const hp=el('hp');if(hp)hp.style.width=Math.max(0,BT.hp/BT.max*100)+'%';
@@ -556,12 +577,16 @@ function screenSettings(){sfx('click');const s=S.settings;
    <div class="panel"><h2>⚙️ הגדרות</h2>
     <label>אפקטי קול</label><select id="s-sfx"><option value="1" ${s.sfx?'selected':''}>מופעל 🔊</option><option value="0" ${!s.sfx?'selected':''}>כבוי 🔇</option></select>
     <label>הקראת מילים באנגלית</label><select id="s-sp"><option value="1" ${s.speech?'selected':''}>מופעל 🗣️</option><option value="0" ${!s.speech?'selected':''}>כבוי</option></select>
+    <label>קצב הטיימר בקרב</label><select id="s-timer">
+      <option value="off" ${(s.timer||'slow')==='off'?'selected':''}>בלי טיימר (רגוע — בלי לחץ זמן) 🐢</option>
+      <option value="slow" ${(s.timer||'slow')==='slow'?'selected':''}>איטי (מומלץ)</option>
+      <option value="normal" ${(s.timer||'slow')==='normal'?'selected':''}>רגיל (מהיר)</option></select>
     <label>ספק AI לסיפורים (אופציונלי)</label><select id="s-prov"><option value="off" ${s.aiProvider==='off'?'selected':''}>ללא (תבניות)</option><option value="openai" ${s.aiProvider==='openai'?'selected':''}>OpenAI</option><option value="anthropic" ${s.aiProvider==='anthropic'?'selected':''}>Anthropic</option></select>
     <label>מפתח API (נשמר רק במכשיר)</label><input id="s-key" value="${s.aiKey?'••••••••':''}" placeholder="sk-..." autocomplete="off">
     <small class="hint">המפתח נשמר מקומית בלבד.</small><div style="height:12px"></div>
     <button class="btn" onclick="saveSettings()">שמירה 💾</button>
    </div></div>`);}
-window.saveSettings=function(){S.settings.sfx=$('#s-sfx').value==='1';S.settings.speech=$('#s-sp').value==='1';S.settings.aiProvider=$('#s-prov').value;
+window.saveSettings=function(){S.settings.sfx=$('#s-sfx').value==='1';S.settings.speech=$('#s-sp').value==='1';S.settings.timer=$('#s-timer').value;S.settings.aiProvider=$('#s-prov').value;
   const k=$('#s-key').value;if(k&&k!=='••••••••')S.settings.aiKey=k.trim();save();sfx('correct');screenHome();};
 
 /* ---------- Parent dashboard ---------- */
