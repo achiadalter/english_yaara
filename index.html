@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b0e2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Word Brawl ⚔️</title>
+<style>
+:root{
+  --bg0:#0a0d24; --bg1:#141a45; --panel:#1c2350; --panel2:#252d63;
+  --neon:#00e5ff; --neon2:#ff2e97; --gold:#ffd23f; --good:#25f4a0; --bad:#ff4d6d;
+  --ink:#eaf0ff; --muted:#9aa6d6; --radius:20px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%}
+body{font-family:Rubik,"Segoe UI",Arial,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 50% -10%,#26307a,#0a0d24 60%);min-height:100%;overflow-x:hidden}
+#app{max-width:820px;margin:0 auto;padding:12px 14px 30px;min-height:100vh}
+.screen{display:none;animation:fade .3s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h1,h2,h3{margin:.2em 0}
+.panel{background:linear-gradient(160deg,var(--panel),var(--bg1));border:1px solid #33409a;
+  border-radius:var(--radius);padding:18px;margin:12px 0;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+button{font-family:inherit;cursor:pointer;border:none;font-weight:800}
+.btn{background:linear-gradient(135deg,var(--neon),#2b8bff);color:#04122b;padding:16px;font-size:1.15rem;
+  border-radius:16px;width:100%;box-shadow:0 5px 0 #0a63b8, 0 8px 18px rgba(0,229,255,.35);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #0a63b8}
+.btn.mega{background:linear-gradient(135deg,var(--neon2),#ff7a3c);color:#fff;font-size:1.5rem;padding:22px;
+  box-shadow:0 6px 0 #b01166,0 10px 26px rgba(255,46,151,.45);letter-spacing:1px}
+.btn.mega:active{box-shadow:0 1px 0 #b01166}
+.btn.gold{background:linear-gradient(135deg,var(--gold),#ff9f1c);color:#3a2600;box-shadow:0 5px 0 #b8860b}
+.btn.ghost{background:#222a5e;color:var(--neon);box-shadow:0 4px 0 #10163a;border:1px solid #3a4699}
+input,select{font-family:inherit;font-size:1.05rem;padding:13px;border-radius:13px;border:2px solid #3a4699;
+  width:100%;background:#141a45;color:var(--ink)}
+input::placeholder{color:#6f7ab5}
+label{font-weight:700;display:block;margin:14px 0 6px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+.center{text-align:center}.muted{color:var(--muted)}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0}
+.chip{display:inline-flex;align-items:center;gap:5px;background:#141a45;border:1px solid #3a4699;
+  color:var(--ink);padding:7px 13px;border-radius:999px;font-weight:800;font-size:.95rem}
+/* hero character */
+.hero{display:flex;flex-direction:column;align-items:center;gap:6px}
+.avatar{width:118px;height:118px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:66px;position:relative;background:radial-gradient(circle at 35% 30%,#2b356f,#161c47);
+  box-shadow:0 0 0 4px #33409a, 0 0 32px var(--glow,#00e5ff);animation:float 3s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px)}}
+.rank{font-size:.85rem;color:var(--muted)}
+.namebig{font-size:1.4rem;font-weight:900}
+/* progress bars */
+.bar{background:#0e1236;border-radius:999px;height:16px;overflow:hidden;border:1px solid #33409a}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--good),#a3f7d0);width:0;transition:width .4s}
+.hpbar>i{background:linear-gradient(90deg,#ff4d6d,#ff9f1c)}
+.xpbar>i{background:linear-gradient(90deg,var(--neon),#7a5cff)}
+.timebar{height:12px}.timebar>i{background:linear-gradient(90deg,var(--gold),#ff5a3c);transition:width .25s linear}
+/* battle */
+.enemy{display:flex;flex-direction:column;align-items:center;gap:4px}
+.mon{font-size:64px;animation:float 2.4s ease-in-out infinite}
+.mon.hit{animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) rotate(-6deg)}40%{transform:translateX(10px) rotate(6deg)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+.hearts{font-size:1.3rem;letter-spacing:3px}
+.combo{font-weight:900;font-size:1.1rem;color:var(--gold);min-height:1.3em}
+.combo.big{animation:pop .35s}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.5)}100%{transform:scale(1)}}
+.qword{font-size:2.5rem;font-weight:900;letter-spacing:.5px;margin:6px 0}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:12px}
+.opt{background:#232b60;border:2px solid #3a4699;border-radius:16px;padding:17px;font-size:1.15rem;font-weight:800;
+  color:var(--ink);min-height:62px;transition:transform .07s}
+.opt:active{transform:scale(.96)}
+.opt.good{background:#0e6b4a;border-color:var(--good);color:#eafff5}
+.opt.bad{background:#7a1730;border-color:var(--bad);color:#ffe3e9}
+@media(max-width:420px){.opts{grid-template-columns:1fr}.qword{font-size:2rem}}
+.speaker{background:#232b60;border:1px solid #3a4699;border-radius:50%;width:48px;height:48px;font-size:22px;color:var(--ink)}
+.dmg{position:absolute;font-weight:900;color:var(--gold);font-size:1.6rem;pointer-events:none;animation:rise 1s forwards}
+@keyframes rise{to{transform:translateY(-60px);opacity:0}}
+/* chest */
+.chest{font-size:96px;display:inline-block}
+.chest.wob{animation:wob .4s ease-in-out 4}
+@keyframes wob{0%,100%{transform:rotate(0)}25%{transform:rotate(-9deg)}75%{transform:rotate(9deg)}}
+.reward{display:flex;align-items:center;gap:10px;justify-content:center;background:#141a45;border:1px solid #3a4699;
+  border-radius:14px;padding:12px;margin:8px 0;font-weight:800;font-size:1.1rem;animation:fade .4s}
+/* character grid */
+.cgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.cell{background:#141a45;border:2px solid #3a4699;border-radius:16px;padding:12px 6px;text-align:center;cursor:pointer}
+.cell .ca{font-size:44px}
+.cell.sel{border-color:var(--gold);box-shadow:0 0 16px var(--gold)}
+.cell.lock{opacity:.4;filter:grayscale(1)}
+.cell small{display:block;color:var(--muted);font-size:.8rem}
+.rar{font-size:.72rem;font-weight:800;padding:2px 7px;border-radius:999px;display:inline-block;margin-top:3px}
+.rar.common{background:#3a4699;color:#dfe6ff}.rar.rare{background:#1b7fd6;color:#fff}
+.rar.epic{background:#a24bff;color:#fff}.rar.legendary{background:linear-gradient(90deg,#ffd23f,#ff7a3c);color:#3a2600}
+/* trophy road */
+.road{display:flex;gap:0;overflow-x:auto;padding:12px 4px;scroll-snap-type:x mandatory}
+.mile{flex:0 0 auto;width:120px;text-align:center;scroll-snap-align:center;position:relative}
+.mile .dot{width:20px;height:20px;border-radius:50%;background:#33409a;margin:8px auto;border:3px solid #0a0d24}
+.mile.reached .dot{background:var(--gold)}
+.mile .rw{font-size:34px}.mile .th{font-weight:800;color:var(--gold)}
+.mile.claim{background:#2a2350;border:1px solid var(--gold);border-radius:14px;padding:6px}
+.line{height:4px;background:#33409a;position:absolute;top:34px;right:-50%;width:100%;z-index:-1}
+.stat{background:#141a45;border:1px solid #3a4699;border-radius:14px;padding:12px;text-align:center}
+.stat b{font-size:1.7rem;display:block;color:var(--neon)}
+.tag{display:inline-block;background:#232b60;border:1px solid #3a4699;color:var(--ink);border-radius:999px;padding:6px 12px;margin:3px;font-weight:700;font-size:.92rem}
+.tag.weak{background:#5a1526;border-color:var(--bad)}
+a.link{color:var(--neon);text-decoration:underline;cursor:pointer}
+small.hint{color:var(--muted)}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:60}
+.conf{position:absolute;width:11px;height:15px;opacity:.95;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(600deg);opacity:0}}
+.shakeit{animation:scr .4s}
+@keyframes scr{0%,100%{transform:translate(0,0)}25%{transform:translate(-6px,4px)}50%{transform:translate(6px,-4px)}75%{transform:translate(-4px,-3px)}}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0;min-height:54px}
+.tile{background:#232b60;border:2px solid #3a4699;border-radius:12px;padding:12px 15px;font-size:1.2rem;font-weight:900;color:var(--ink)}
+.slot{min-height:54px;border:2px dashed #4a58b5;border-radius:14px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.slotchip{background:var(--neon);color:#04122b;border-radius:10px;padding:11px 14px;font-size:1.2rem;font-weight:900}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="confetti" id="confetti"></div>
+<script>
+window.VOCAB = {"meta": {"title": "English Adventure - Grade 5 Vocabulary", "source": "Israeli Grade 5 Unit Check word lists (5 units)", "totalWords": 401, "categories": ["adjectives", "art", "body", "calendar", "camping", "clothes", "directions", "family", "food", "general", "home", "music", "numbers", "olympics", "people", "phrases", "time", "times-of-day", "trips", "vegetables", "verbs"], "units": [1, 2, 3, 4, 5]}, "words": [{"id": "u1-anywhere", "word": "anywhere", "hebrew": "בְּכָל מָקוֹם", "category": "general", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-as", "word": "as", "hebrew": "כְּמוֹ / בְּתוֹר", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-ate", "word": "ate", "hebrew": "אָכַל (עבר)", "category": "verbs", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-begin", "word": "begin", "hebrew": "לְהַתְחִיל", "category": "verbs", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-beginning", "word": "beginning", "hebrew": "הַתְחָלָה", "category": "general", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-catch", "word": "catch", "hebrew": "לִתְפּוֹס", "category": "verbs", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-center", "word": "center", "hebrew": "מֶרְכָּז", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-cool", "word": "cool", "hebrew": "מָגְנִיב / קָרִיר", "category": "adjectives", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-dancer", "word": "dancer", "hebrew": "רַקְדָן", "category": "people", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-daughter", "word": "daughter", "hebrew": "בַּת", "category": "family", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-difficult", "word": "difficult", "hebrew": "קָשֶׁה", "category": "adjectives", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-do-you-know", "word": "Do you know ... ?", "hebrew": "הַאִם אַתָּה יוֹדֵעַ...?", "category": "phrases", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-doll", "word": "doll", "hebrew": "בּוּבָּה", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-drive", "word": "drive", "hebrew": "לִנְהוֹג", "category": "verbs", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-dry", "word": "dry", "hebrew": "יָבֵשׁ", "category": "adjectives", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-early", "word": "early", "hebrew": "מֻקְדָּם", "category": "time", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-farmer", "word": "farmer", "hebrew": "חַקְלַאי", "category": "people", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-floor", "word": "floor", "hebrew": "רִצְפָּה / קוֹמָה", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-good-luck", "word": "good luck", "hebrew": "בְּהַצְלָחָה", "category": "phrases", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-grandchildren", "word": "grandchildren", "hebrew": "נְכָדִים", "category": "family", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-granddaughter", "word": "granddaughter", "hebrew": "נֶכְדָּה", "category": "family", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-grandparents", "word": "grandparents", "hebrew": "סַבָּא וְסַבְתָא", "category": "family", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-grandson", "word": "grandson", "hebrew": "נֶכֶד", "category": "family", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-group", "word": "group", "hebrew": "קְבוּצָה", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-half", "word": "half", "hebrew": "חֵצִי", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-have-a-nice-time", "word": "have a nice time", "hebrew": "תֵּהָנֶה", "category": "phrases", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-heavy", "word": "heavy", "hebrew": "כָּבֵד", "category": "adjectives", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-him", "word": "him", "hebrew": "אוֹתוֹ / לוֹ", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-hold", "word": "hold", "hebrew": "לְהַחְזִיק", "category": "verbs", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-holiday", "word": "holiday", "hebrew": "חַג / חֻפְשָׁה", "category": "time", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-how-about", "word": "How about ... ?", "hebrew": "מָה דַעְתְּךָ עַל...?", "category": "phrases", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-husband", "word": "husband", "hebrew": "בַּעַל", "category": "family", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-inside", "word": "inside", "hebrew": "בִּפְנִים", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-internet", "word": "internet", "hebrew": "אִינְטֶרְנֶט", "category": "general", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-jacket", "word": "jacket", "hebrew": "מְעִיל / זָ'קֶט", "category": "clothes", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-jeans", "word": "jeans", "hebrew": "גִּ'ינְס", "category": "clothes", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-just", "word": "just", "hebrew": "רַק / זֶה עַתָּה", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-language", "word": "language", "hebrew": "שָׂפָה", "category": "general", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-last-night", "word": "last night", "hebrew": "אֶמֶשׁ", "category": "time", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-late", "word": "late", "hebrew": "מְאֻחָר", "category": "time", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-laugh", "word": "laugh", "hebrew": "לִצְחוֹק", "category": "verbs", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-leather", "word": "leather", "hebrew": "עוֹר", "category": "clothes", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-lie-down", "word": "lie down", "hebrew": "לִשְׁכַּב", "category": "verbs", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-make-plans", "word": "make plans", "hebrew": "לְתַכְנֵן", "category": "phrases", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-maybe", "word": "maybe", "hebrew": "אוּלַי", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-movie", "word": "movie", "hebrew": "סֶרֶט", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-never", "word": "never", "hebrew": "אַף פַּעַם", "category": "time", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-nobody", "word": "nobody", "hebrew": "אַף אֶחָד", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-not-very", "word": "not very ...", "hebrew": "לֹא כָּל כָּךְ...", "category": "phrases", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-often", "word": "often", "hebrew": "לְעִתִּים קְרוֹבוֹת", "category": "time", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-painter", "word": "painter", "hebrew": "צַיָּר", "category": "people", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-part", "word": "part", "hebrew": "חֵלֶק", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-price", "word": "price", "hebrew": "מְחִיר", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-program", "word": "program", "hebrew": "תָּכְנִית", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-push", "word": "push", "hebrew": "לִדְחוֹף", "category": "verbs", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-radio", "word": "radio", "hebrew": "רַדְיוֹ", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-real", "word": "real", "hebrew": "אֲמִתִּי", "category": "adjectives", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-runner", "word": "runner", "hebrew": "רָץ", "category": "people", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-say-it-again-please", "word": "Say it again, please.", "hebrew": "תַּגִּיד שׁוּב, בְּבַקָּשָׁה.", "category": "phrases", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-seat", "word": "seat", "hebrew": "מוֹשָׁב", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-see-you-later", "word": "See you later.", "hebrew": "לְהִתְרָאוֹת.", "category": "phrases", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-singer", "word": "singer", "hebrew": "זַמָּר", "category": "people", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-someone", "word": "someone", "hebrew": "מִישֶׁהוּ", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-speak", "word": "speak", "hebrew": "לְדַבֵּר", "category": "verbs", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-spend", "word": "spend", "hebrew": "לְבַזְבֵּז / לְהוֹצִיא", "category": "verbs", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-storm", "word": "storm", "hebrew": "סְעָרָה", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-strong", "word": "strong", "hebrew": "חָזָק", "category": "adjectives", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-taxi", "word": "taxi", "hebrew": "מוֹנִית", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-than", "word": "than", "hebrew": "מֵאֲשֶׁר", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-the-moon", "word": "the moon", "hebrew": "הַיָּרֵחַ", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-there", "word": "there", "hebrew": "שָׁם", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-those", "word": "those", "hebrew": "אֵלֶּה (רְחוֹקִים)", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-ticket", "word": "ticket", "hebrew": "כַּרְטִיס", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-tonight", "word": "tonight", "hebrew": "הַלַּיְלָה", "category": "time", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-turn-on", "word": "turn on", "hebrew": "לְהַדְלִיק", "category": "verbs", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-uncle", "word": "uncle", "hebrew": "דּוֹד", "category": "family", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-until", "word": "until", "hebrew": "עַד", "category": "time", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-watch", "word": "watch", "hebrew": "שָׁעוֹן יָד", "category": "general", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-well", "word": "well", "hebrew": "טוֹב / הֵיטֵב", "category": "general", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-wife", "word": "wife", "hebrew": "אִשָּׁה (רַעְיָה)", "category": "family", "unit": 1, "difficulty": "easy", "exampleSentence": null}, {"id": "u1-writer", "word": "writer", "hebrew": "סוֹפֵר", "category": "people", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u1-yesterday", "word": "yesterday", "hebrew": "אֶתְמוֹל", "category": "time", "unit": 1, "difficulty": "hard", "exampleSentence": null}, {"id": "u1-young", "word": "young", "hebrew": "צָעִיר", "category": "adjectives", "unit": 1, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-air", "word": "air", "hebrew": "אֲוִיר", "category": "camping", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-anyone", "word": "anyone", "hebrew": "מִישֶׁהוּ / כָּל אֶחָד", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-back", "word": "back", "hebrew": "גַּב / בַּחֲזָרָה", "category": "body", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-bank", "word": "bank", "hebrew": "בַּנְק", "category": "directions", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-because-of", "word": "because of", "hebrew": "בִּגְלַל", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-better", "word": "better", "hebrew": "יוֹתֵר טוֹב", "category": "adjectives", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-between", "word": "between", "hebrew": "בֵּין", "category": "directions", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-bottle", "word": "bottle", "hebrew": "בַּקְבּוּק", "category": "camping", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-busy", "word": "busy", "hebrew": "עָסוּק", "category": "adjectives", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-cellphone", "word": "cellphone", "hebrew": "טֶלֶפוֹן נַיָּד", "category": "general", "unit": 2, "difficulty": "hard", "exampleSentence": null}, {"id": "u2-change", "word": "change", "hebrew": "לְשַׁנּוֹת / עֹדֶף", "category": "verbs", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-cinema", "word": "cinema", "hebrew": "קוֹלְנוֹעַ", "category": "directions", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-city", "word": "city", "hebrew": "עִיר", "category": "directions", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-clear", "word": "clear", "hebrew": "בָּרוּר / צָלוּל", "category": "adjectives", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-come-from", "word": "come from", "hebrew": "לָבוֹא מִ־", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-dark", "word": "dark", "hebrew": "חָשׁוּךְ", "category": "adjectives", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-everywhere", "word": "everywhere", "hebrew": "בְּכָל מָקוֹם", "category": "general", "unit": 2, "difficulty": "hard", "exampleSentence": null}, {"id": "u2-fall", "word": "fall", "hebrew": "לִפּוֹל / סְתָו", "category": "verbs", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-fast-food", "word": "fast food", "hebrew": "אֹכֶל מָהִיר", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-finger", "word": "finger", "hebrew": "אֶצְבַּע", "category": "body", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-finish", "word": "finish", "hebrew": "לְסַיֵּם", "category": "verbs", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-forest", "word": "forest", "hebrew": "יַעַר", "category": "camping", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-forget", "word": "forget", "hebrew": "לִשְׁכּוֹחַ", "category": "verbs", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-glass", "word": "glass", "hebrew": "זְכוּכִית / כּוֹס", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-go-away", "word": "go away", "hebrew": "לָלֶכֶת מִכָּאן", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-go-in", "word": "go in", "hebrew": "לְהִכָּנֵס", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-go-on", "word": "go on", "hebrew": "לְהַמְשִׁיךְ", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-go-out", "word": "go out", "hebrew": "לָצֵאת", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-go-shopping", "word": "go shopping", "hebrew": "לָלֶכֶת לִקְנִיּוֹת", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-have-a-problem", "word": "have a problem", "hebrew": "יֵשׁ בְּעָיָה", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-have-fun", "word": "have fun", "hebrew": "לֵהָנוֹת", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-heart", "word": "heart", "hebrew": "לֵב", "category": "body", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-here", "word": "here", "hebrew": "כָּאן", "category": "directions", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-into", "word": "into", "hebrew": "לְתוֹךְ", "category": "directions", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-kilogram", "word": "kilogram", "hebrew": "קִילוֹגְרָם", "category": "general", "unit": 2, "difficulty": "hard", "exampleSentence": null}, {"id": "u2-large", "word": "large", "hebrew": "גָּדוֹל", "category": "adjectives", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-last", "word": "last", "hebrew": "אַחֲרוֹן", "category": "adjectives", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-leave", "word": "leave", "hebrew": "לַעֲזוֹב", "category": "verbs", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-letter", "word": "letter", "hebrew": "מִכְתָּב / אוֹת", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-life", "word": "life", "hebrew": "חַיִּים", "category": "general", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-light", "word": "light", "hebrew": "אוֹר / קַל", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-list", "word": "list", "hebrew": "רְשִׁימָה", "category": "general", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-listen", "word": "Listen!", "hebrew": "תַּקְשִׁיב!", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-look-like", "word": "look like", "hebrew": "לְהֵרָאוֹת כְּמוֹ", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-magazine", "word": "magazine", "hebrew": "מָגָזִין", "category": "general", "unit": 2, "difficulty": "hard", "exampleSentence": null}, {"id": "u2-museum", "word": "museum", "hebrew": "מוּזֵיאוֹן", "category": "directions", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-no", "word": "no", "hebrew": "לֹא", "category": "general", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-on-the-left", "word": "on the left", "hebrew": "מִצַּד שְׂמֹאל", "category": "directions", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-on-the-right", "word": "on the right", "hebrew": "מִצַּד יָמִין", "category": "directions", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-over", "word": "over", "hebrew": "מֵעַל / נִגְמַר", "category": "directions", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-plan", "word": "plan", "hebrew": "לְתַכְנֵן", "category": "verbs", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-plant", "word": "plant", "hebrew": "צֶמַח", "category": "camping", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-point", "word": "point", "hebrew": "נְקֻדָּה / לְהַצְבִּיעַ", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-quiet", "word": "quiet", "hebrew": "שָׁקֵט", "category": "adjectives", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-remember", "word": "remember", "hebrew": "לִזְכּוֹר", "category": "verbs", "unit": 2, "difficulty": "hard", "exampleSentence": null}, {"id": "u2-rich", "word": "rich", "hebrew": "עָשִׁיר", "category": "adjectives", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-river", "word": "river", "hebrew": "נָהָר", "category": "camping", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-sand", "word": "sand", "hebrew": "חוֹל", "category": "camping", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-send", "word": "send", "hebrew": "לִשְׁלוֹחַ", "category": "verbs", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-stay", "word": "stay", "hebrew": "לְהִשָּׁאֵר", "category": "verbs", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-straight", "word": "straight", "hebrew": "יָשָׁר", "category": "directions", "unit": 2, "difficulty": "hard", "exampleSentence": null}, {"id": "u2-supermarket", "word": "supermarket", "hebrew": "סוּפֶּרְמַרְקֶט", "category": "directions", "unit": 2, "difficulty": "hard", "exampleSentence": null}, {"id": "u2-take-a-shower", "word": "take a shower", "hebrew": "לְהִתְקַלֵּחַ", "category": "phrases", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-teeth", "word": "teeth", "hebrew": "שִׁנַּיִם", "category": "body", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-tent", "word": "tent", "hebrew": "אֹהֶל", "category": "camping", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-these", "word": "these", "hebrew": "אֵלֶּה (קְרוֹבִים)", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-thin", "word": "thin", "hebrew": "רָזֶה / דַּק", "category": "adjectives", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-too", "word": "too", "hebrew": "גַּם / יוֹתֵר מִדַּי", "category": "general", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-top", "word": "top", "hebrew": "לְמַעְלָה / רֹאשׁ", "category": "directions", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-travel", "word": "travel", "hebrew": "לִנְסוֹעַ", "category": "verbs", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-turn-off", "word": "turn off", "hebrew": "לְכַבּוֹת", "category": "verbs", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-usually", "word": "usually", "hebrew": "בְּדֶרֶךְ כְּלָל", "category": "time", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-visit", "word": "visit", "hebrew": "לְבַקֵּר", "category": "verbs", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u2-wash", "word": "wash", "hebrew": "לִרְחוֹץ", "category": "verbs", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-work", "word": "work", "hebrew": "עֲבוֹדָה", "category": "general", "unit": 2, "difficulty": "easy", "exampleSentence": null}, {"id": "u2-world", "word": "world", "hebrew": "עוֹלָם", "category": "general", "unit": 2, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-afternoon", "word": "afternoon", "hebrew": "אַחַר הַצָּהֳרַיִם", "category": "times-of-day", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-all", "word": "all", "hebrew": "הַכֹּל", "category": "general", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-another", "word": "another", "hebrew": "עוֹד אֶחָד", "category": "general", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-any", "word": "any", "hebrew": "כָּל / אֵיזֶשֶׁהוּ", "category": "general", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-anything", "word": "anything", "hebrew": "כָּל דָּבָר", "category": "general", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-as-usual", "word": "as usual", "hebrew": "כָּרָגִיל", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-ask-for", "word": "ask for", "hebrew": "לְבַקֵּשׁ", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-before", "word": "before", "hebrew": "לִפְנֵי", "category": "time", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-blouse", "word": "blouse", "hebrew": "חֻלְצָה", "category": "clothes", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-body", "word": "body", "hebrew": "גּוּף", "category": "body", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-bookshop", "word": "bookshop", "hebrew": "חֲנוּת סְפָרִים", "category": "directions", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-breakfast", "word": "breakfast", "hebrew": "אֲרוּחַת בֹּקֶר", "category": "food", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-butter", "word": "butter", "hebrew": "חֶמְאָה", "category": "food", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-call", "word": "call", "hebrew": "לְהִתְקַשֵּׁר / לִקְרוֹא", "category": "verbs", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-camera", "word": "camera", "hebrew": "מַצְלֵמָה", "category": "general", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-cook", "word": "cook", "hebrew": "לְבַשֵּׁל", "category": "verbs", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-corner", "word": "corner", "hebrew": "פִּנָּה", "category": "directions", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-cream", "word": "cream", "hebrew": "שַׁמֶּנֶת / קְרֶם", "category": "food", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-cucumber", "word": "cucumber", "hebrew": "מְלָפְפוֹן", "category": "vegetables", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-cup", "word": "cup", "hebrew": "סֵפֶל / כּוֹס", "category": "food", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-customer", "word": "customer", "hebrew": "לָקוֹחַ", "category": "people", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-different", "word": "different", "hebrew": "שׁוֹנֶה", "category": "adjectives", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-don-t-worry", "word": "don't worry", "hebrew": "אַל תִּדְאַג", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-enjoy", "word": "enjoy", "hebrew": "לֵהָנוֹת", "category": "verbs", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-evening", "word": "evening", "hebrew": "עֶרֶב", "category": "times-of-day", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-everything", "word": "everything", "hebrew": "הַכֹּל", "category": "general", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-friendly", "word": "friendly", "hebrew": "יְדִידוּתִי", "category": "adjectives", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-garlic", "word": "garlic", "hebrew": "שׁוּם", "category": "vegetables", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-good-afternoon", "word": "Good afternoon.", "hebrew": "צָהֳרַיִם טוֹבִים.", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-have-a-good-day", "word": "Have a good day.", "hebrew": "שֶׁיִּהְיֶה יוֹם טוֹב.", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-jam", "word": "jam", "hebrew": "רִבָּה", "category": "food", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-knee", "word": "knee", "hebrew": "בֶּרֶךְ", "category": "body", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-less", "word": "less", "hebrew": "פָּחוֹת", "category": "general", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-long", "word": "long", "hebrew": "אָרֹךְ", "category": "adjectives", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-look-for", "word": "look for", "hebrew": "לְחַפֵּשׂ", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-mix", "word": "mix", "hebrew": "לְעַרְבֵּב", "category": "verbs", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-mug", "word": "mug", "hebrew": "סֵפֶל גָּדוֹל", "category": "food", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-neck", "word": "neck", "hebrew": "צַוָּאר", "category": "body", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-next", "word": "next", "hebrew": "הַבָּא", "category": "general", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-night", "word": "night", "hebrew": "לַיְלָה", "category": "times-of-day", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-note", "word": "note", "hebrew": "פֶּתֶק", "category": "general", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-oil", "word": "oil", "hebrew": "שֶׁמֶן", "category": "food", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-once", "word": "once", "hebrew": "פַּעַם אַחַת", "category": "time", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-onion", "word": "onion", "hebrew": "בָּצָל", "category": "vegetables", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-only", "word": "only", "hebrew": "רַק", "category": "general", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-out", "word": "out", "hebrew": "בַּחוּץ", "category": "directions", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-pass", "word": "pass", "hebrew": "לְהַעֲבִיר / לַעֲבוֹר", "category": "verbs", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-pepper", "word": "pepper", "hebrew": "פִּלְפֵּל", "category": "vegetables", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-put", "word": "put", "hebrew": "לָשִׂים", "category": "verbs", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-quick", "word": "quick", "hebrew": "מָהִיר", "category": "adjectives", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-raincoat", "word": "raincoat", "hebrew": "מְעִיל גֶּשֶׁם", "category": "clothes", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-recipe", "word": "recipe", "hebrew": "מַתְכּוֹן", "category": "food", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-restaurant", "word": "restaurant", "hebrew": "מִסְעָדָה", "category": "directions", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-rice", "word": "rice", "hebrew": "אֹרֶז", "category": "food", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-salt", "word": "salt", "hebrew": "מֶלַח", "category": "food", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-save", "word": "save", "hebrew": "לִשְׁמוֹר / לְהַצִּיל", "category": "verbs", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-sometimes", "word": "sometimes", "hebrew": "לִפְעָמִים", "category": "time", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-spoon", "word": "spoon", "hebrew": "כַּף", "category": "food", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-steak", "word": "steak", "hebrew": "סְטֵייְק", "category": "food", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-sugar", "word": "sugar", "hebrew": "סֻכָּר", "category": "food", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-supper", "word": "supper", "hebrew": "אֲרוּחַת עֶרֶב", "category": "food", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-take-care-of", "word": "take care of", "hebrew": "לִדְאוֹג לְ־", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-tea", "word": "tea", "hebrew": "תֵּה", "category": "food", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-that", "word": "that", "hebrew": "זֶה / הַהוּא", "category": "general", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-toy", "word": "toy", "hebrew": "צַעֲצוּעַ", "category": "general", "unit": 3, "difficulty": "easy", "exampleSentence": null}, {"id": "u3-understand", "word": "understand", "hebrew": "לְהָבִין", "category": "verbs", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-vegetable", "word": "vegetable", "hebrew": "יָרָק", "category": "vegetables", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-waiter", "word": "waiter", "hebrew": "מֶלְצַר", "category": "people", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-waitress", "word": "waitress", "hebrew": "מֶלְצָרִית", "category": "people", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-watermelon", "word": "watermelon", "hebrew": "אֲבַטִּיחַ", "category": "food", "unit": 3, "difficulty": "hard", "exampleSentence": null}, {"id": "u3-website", "word": "website", "hebrew": "אֲתַר אִינְטֶרְנֶט", "category": "general", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-weekend", "word": "weekend", "hebrew": "סוֹף שָׁבוּעַ", "category": "time", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-well-done", "word": "Well done!", "hebrew": "כָּל הַכָּבוֹד!", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-which", "word": "which", "hebrew": "אֵיזֶה", "category": "general", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-wrong", "word": "wrong", "hebrew": "לֹא נָכוֹן / טָעוּת", "category": "adjectives", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-yes-please", "word": "Yes, please.", "hebrew": "כֵּן, בְּבַקָּשָׁה.", "category": "phrases", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u3-yogurt", "word": "yogurt", "hebrew": "יוֹגוּרְט", "category": "food", "unit": 3, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-a-quarter-past", "word": "a quarter past", "hebrew": "רֶבַע אַחֲרֵי", "category": "time", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-a-quarter-to", "word": "a quarter to", "hebrew": "רֶבַע לְ", "category": "time", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-adult", "word": "adult", "hebrew": "מְבֻגָּר", "category": "people", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-after", "word": "after", "hebrew": "אַחֲרֵי", "category": "time", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-again", "word": "again", "hebrew": "שׁוּב", "category": "time", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-ago", "word": "ago", "hebrew": "לִפְנֵי (זְמַן)", "category": "time", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-always", "word": "always", "hebrew": "תָּמִיד", "category": "time", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-artist", "word": "artist", "hebrew": "אָמָן", "category": "art", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-aunt", "word": "aunt", "hebrew": "דּוֹדָה", "category": "family", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-because", "word": "because", "hebrew": "כִּי / בִּגְלַל", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-build", "word": "build", "hebrew": "לִבְנוֹת", "category": "verbs", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-be-called", "word": "be called", "hebrew": "לְהִקָּרֵא", "category": "phrases", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-choose", "word": "choose", "hebrew": "לִבְחוֹר", "category": "verbs", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-clock", "word": "clock", "hebrew": "שָׁעוֹן", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-club", "word": "club", "hebrew": "מוֹעֲדוֹן", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-country", "word": "country", "hebrew": "מְדִינָה / אֶרֶץ", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-cry", "word": "cry", "hebrew": "לִבְכּוֹת", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-easy", "word": "easy", "hebrew": "קַל", "category": "adjectives", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-excited", "word": "excited", "hebrew": "נִרְגָּשׁ", "category": "adjectives", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-find", "word": "find", "hebrew": "לִמְצוֹא", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-first", "word": "first", "hebrew": "רִאשׁוֹן", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-fix", "word": "fix", "hebrew": "לְתַקֵּן", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-get", "word": "get", "hebrew": "לְקַבֵּל / לְהַשִּׂיג", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-get-up", "word": "get up", "hebrew": "לָקוּם", "category": "phrases", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-hard", "word": "hard", "hebrew": "קָשֶׁה / חָזָק", "category": "adjectives", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-hour", "word": "hour", "hebrew": "שָׁעָה", "category": "time", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-how", "word": "how", "hebrew": "אֵיךְ", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-hurt", "word": "hurt", "hebrew": "לִכְאוֹב / לִפְגּוֹעַ", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-ice", "word": "ice", "hebrew": "קֶרַח", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-important", "word": "important", "hebrew": "חָשׁוּב", "category": "adjectives", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-interesting", "word": "interesting", "hebrew": "מְעַנְיֵן", "category": "adjectives", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-keep", "word": "keep", "hebrew": "לִשְׁמוֹר / לְהַחְזִיק", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-later", "word": "later", "hebrew": "מְאֻחָר יוֹתֵר", "category": "time", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-lie", "word": "lie", "hebrew": "לְשַׁקֵּר / שֶׁקֶר", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-many", "word": "many", "hebrew": "הַרְבֵּה", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-medal", "word": "medal", "hebrew": "מֶדַלְיָה", "category": "olympics", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-minute", "word": "minute", "hebrew": "דַּקָּה", "category": "time", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-money", "word": "money", "hebrew": "כֶּסֶף", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-more", "word": "more", "hebrew": "יוֹתֵר", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-move", "word": "move", "hebrew": "לָזוּז / לַעֲבוֹר דִּירָה", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-need", "word": "need", "hebrew": "לִצְרוֹךְ", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-neighbor", "word": "neighbor", "hebrew": "שָׁכֵן", "category": "people", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-noise", "word": "noise", "hebrew": "רַעַשׁ", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-of", "word": "of", "hebrew": "שֶׁל", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-olympic-games", "word": "Olympic Games", "hebrew": "הַמִּשְׂחָקִים הָאוֹלִימְפִּיִּים", "category": "olympics", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-or", "word": "or", "hebrew": "אוֹ", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-our", "word": "our", "hebrew": "שֶׁלָּנוּ", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-paint", "word": "paint", "hebrew": "לִצְבּוֹעַ / לְצַיֵּר", "category": "art", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-parent", "word": "parent", "hebrew": "הוֹרֶה", "category": "family", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-place", "word": "place", "hebrew": "מָקוֹם", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-plate", "word": "plate", "hebrew": "צַלַּחַת", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-player", "word": "player", "hebrew": "שַׂחְקָן", "category": "people", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-poor", "word": "poor", "hebrew": "עָנִי", "category": "adjectives", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-practice", "word": "practice", "hebrew": "לְהִתְאַמֵּן / תִּרְגּוּל", "category": "olympics", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-prepare", "word": "prepare", "hebrew": "לְהָכִין", "category": "verbs", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-prize", "word": "prize", "hebrew": "פְּרָס", "category": "olympics", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-problem", "word": "problem", "hebrew": "בְּעָיָה", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-race", "word": "race", "hebrew": "מֵרוֹץ", "category": "olympics", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-right", "word": "right", "hebrew": "נָכוֹן / יָמִינָה", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-road", "word": "road", "hebrew": "כְּבִישׁ", "category": "directions", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-safe", "word": "safe", "hebrew": "בָּטוּחַ", "category": "adjectives", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-second", "word": "second", "hebrew": "שֵׁנִי / שְׁנִיָּה", "category": "general", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-sick", "word": "sick", "hebrew": "חוֹלֶה", "category": "adjectives", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-sign", "word": "sign", "hebrew": "שֶׁלֶט / לַחְתּוֹם", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-some", "word": "some", "hebrew": "קְצָת / כַּמָּה", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-something", "word": "something", "hebrew": "מַשֶּׁהוּ", "category": "general", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-son", "word": "son", "hebrew": "בֵּן", "category": "family", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-table-tennis", "word": "table tennis", "hebrew": "טֶנִיס שֻׁלְחָן", "category": "olympics", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-them", "word": "them", "hebrew": "אוֹתָם", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-think", "word": "think", "hebrew": "לַחְשׁוֹב", "category": "verbs", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u4-time", "word": "time", "hebrew": "זְמַן / פַּעַם", "category": "time", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-tomorrow", "word": "tomorrow", "hebrew": "מָחָר", "category": "time", "unit": 4, "difficulty": "hard", "exampleSentence": null}, {"id": "u4-true", "word": "true", "hebrew": "נָכוֹן / אֲמִתִּי", "category": "adjectives", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-us", "word": "us", "hebrew": "אוֹתָנוּ", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-use", "word": "use", "hebrew": "לְהִשְׁתַּמֵּשׁ", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-was", "word": "was", "hebrew": "הָיָה", "category": "verbs", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-way", "word": "way", "hebrew": "דֶּרֶךְ", "category": "general", "unit": 4, "difficulty": "easy", "exampleSentence": null}, {"id": "u4-winner", "word": "winner", "hebrew": "מְנַצֵּחַ", "category": "olympics", "unit": 4, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-a-hundred", "word": "a hundred", "hebrew": "מֵאָה", "category": "numbers", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-a-lot-of", "word": "a lot of", "hebrew": "הַרְבֵּה", "category": "general", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-about", "word": "about", "hebrew": "עַל / בְּעֵרֶךְ", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-age", "word": "age", "hebrew": "גִּיל", "category": "general", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-also", "word": "also", "hebrew": "גַּם", "category": "general", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-april", "word": "April", "hebrew": "אַפְּרִיל", "category": "calendar", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-august", "word": "August", "hebrew": "אוֹגוּסְט", "category": "calendar", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-bathroom", "word": "bathroom", "hebrew": "חֲדַר אַמְבַּטְיָה", "category": "home", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-building", "word": "building", "hebrew": "בִּנְיָן", "category": "home", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-candy", "word": "candy", "hebrew": "סֻכָּרִיָּה", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-card", "word": "card", "hebrew": "כַּרְטִיס / גְּלוּיָה", "category": "general", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-classroom", "word": "classroom", "hebrew": "כִּתָּה", "category": "home", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-date", "word": "date", "hebrew": "תַּאֲרִיךְ", "category": "calendar", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-december", "word": "December", "hebrew": "דֶּצֶמְבֶּר", "category": "calendar", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-dining-room", "word": "dining room", "hebrew": "חֲדַר אֹכֶל", "category": "home", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-do", "word": "do", "hebrew": "לַעֲשׂוֹת", "category": "verbs", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-eighteen", "word": "eighteen", "hebrew": "שְׁמוֹנֶה עֶשְׂרֵה", "category": "numbers", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-eighty", "word": "eighty", "hebrew": "שְׁמוֹנִים", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-end", "word": "end", "hebrew": "סוֹף", "category": "general", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-every", "word": "every", "hebrew": "כָּל", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-everyone", "word": "everyone", "hebrew": "כֻּלָּם", "category": "general", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-far", "word": "far", "hebrew": "רָחוֹק", "category": "adjectives", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-february", "word": "February", "hebrew": "פֶבְּרוּאָר", "category": "calendar", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-fifteen", "word": "fifteen", "hebrew": "חֲמֵשׁ עֶשְׂרֵה", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-fifty", "word": "fifty", "hebrew": "חֲמִשִּׁים", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-flat", "word": "flat", "hebrew": "דִּירָה", "category": "home", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-flour", "word": "flour", "hebrew": "קֶמַח", "category": "food", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-flower", "word": "flower", "hebrew": "פֶּרַח", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-for", "word": "for", "hebrew": "בִּשְׁבִיל / לְמֶשֶׁךְ", "category": "general", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-forty", "word": "forty", "hebrew": "אַרְבָּעִים", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-fourteen", "word": "fourteen", "hebrew": "אַרְבַּע עֶשְׂרֵה", "category": "numbers", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-give", "word": "give", "hebrew": "לָתֵת", "category": "verbs", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-goal", "word": "goal", "hebrew": "שַׁעַר / מַטָּרָה", "category": "general", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-guitar", "word": "guitar", "hebrew": "גִּיטָרָה", "category": "music", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-hear", "word": "hear", "hebrew": "לִשְׁמוֹעַ", "category": "verbs", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-her", "word": "her", "hebrew": "שֶׁלָּהּ / אוֹתָהּ", "category": "general", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-hobby", "word": "hobby", "hebrew": "תַּחְבִּיב", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-i-m-sorry", "word": "I'm sorry.", "hebrew": "אֲנִי מִצְטַעֵר.", "category": "phrases", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-israel", "word": "Israel", "hebrew": "יִשְׂרָאֵל", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-january", "word": "January", "hebrew": "יָנוּאָר", "category": "calendar", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-july", "word": "July", "hebrew": "יוּלִי", "category": "calendar", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-june", "word": "June", "hebrew": "יוּנִי", "category": "calendar", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-kick", "word": "kick", "hebrew": "לִבְעוֹט", "category": "verbs", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-like", "word": "like", "hebrew": "לְחַבֵּב / כְּמוֹ", "category": "verbs", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-march", "word": "March", "hebrew": "מֶרְץ", "category": "calendar", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-market", "word": "market", "hebrew": "שׁוּק", "category": "directions", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-may", "word": "May", "hebrew": "מַאי", "category": "calendar", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-month", "word": "month", "hebrew": "חֹדֶשׁ", "category": "calendar", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-nineteen", "word": "nineteen", "hebrew": "תְּשַׁע עֶשְׂרֵה", "category": "numbers", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-ninety", "word": "ninety", "hebrew": "תִּשְׁעִים", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-november", "word": "November", "hebrew": "נוֹבֶמְבֶּר", "category": "calendar", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-october", "word": "October", "hebrew": "אוֹקְטוֹבֶּר", "category": "calendar", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-other", "word": "other", "hebrew": "אַחֵר", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-outside", "word": "outside", "hebrew": "בַּחוּץ", "category": "directions", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-piano", "word": "piano", "hebrew": "פְּסַנְתֵּר", "category": "music", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-play", "word": "play", "hebrew": "לְשַׂחֵק / לְנַגֵּן", "category": "music", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-present", "word": "present", "hebrew": "מַתָּנָה / הוֹוֶה", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-pretty", "word": "pretty", "hebrew": "יָפֶה / דַּי", "category": "adjectives", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-ready", "word": "ready", "hebrew": "מוּכָן", "category": "adjectives", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-same", "word": "same", "hebrew": "אוֹתוֹ הַדָּבָר", "category": "general", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-sell", "word": "sell", "hebrew": "לִמְכּוֹר", "category": "verbs", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-september", "word": "September", "hebrew": "סֶפְּטֶמְבֶּר", "category": "calendar", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-seventeen", "word": "seventeen", "hebrew": "שְׁבַע עֶשְׂרֵה", "category": "numbers", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-seventy", "word": "seventy", "hebrew": "שִׁבְעִים", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-sixteen", "word": "sixteen", "hebrew": "שֵׁשׁ עֶשְׂרֵה", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-sixty", "word": "sixty", "hebrew": "שִׁשִּׁים", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-sofa", "word": "sofa", "hebrew": "סַפָּה", "category": "home", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-song", "word": "song", "hebrew": "שִׁיר", "category": "music", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-soon", "word": "soon", "hebrew": "בְּקָרוֹב", "category": "time", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-special", "word": "special", "hebrew": "מְיֻחָד", "category": "adjectives", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-student", "word": "student", "hebrew": "תַּלְמִיד", "category": "people", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-study", "word": "study", "hebrew": "לִלְמוֹד", "category": "verbs", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-subject", "word": "subject", "hebrew": "מִקְצוֹעַ / נוֹשֵׂא", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-sweet", "word": "sweet", "hebrew": "מָתוֹק", "category": "adjectives", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-teach", "word": "teach", "hebrew": "לְלַמֵּד", "category": "verbs", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-their", "word": "their", "hebrew": "שֶׁלָּהֶם", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-then", "word": "then", "hebrew": "אָז / אַחַר כָּךְ", "category": "time", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-thing", "word": "thing", "hebrew": "דָּבָר", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-thirteen", "word": "thirteen", "hebrew": "שְׁלוֹשׁ עֶשְׂרֵה", "category": "numbers", "unit": 5, "difficulty": "hard", "exampleSentence": null}, {"id": "u5-thirty", "word": "thirty", "hebrew": "שְׁלוֹשִׁים", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-throw", "word": "throw", "hebrew": "לִזְרוֹק", "category": "verbs", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-toilet", "word": "toilet", "hebrew": "שֵׁרוּתִים", "category": "home", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-trip", "word": "trip", "hebrew": "טִיּוּל", "category": "trips", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-twenty", "word": "twenty", "hebrew": "עֶשְׂרִים", "category": "numbers", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-village", "word": "village", "hebrew": "כְּפָר", "category": "general", "unit": 5, "difficulty": "medium", "exampleSentence": null}, {"id": "u5-wait", "word": "wait", "hebrew": "לְחַכּוֹת", "category": "verbs", "unit": 5, "difficulty": "easy", "exampleSentence": null}, {"id": "u5-year", "word": "year", "hebrew": "שָׁנָה", "category": "calendar", "unit": 5, "difficulty": "easy", "exampleSentence": null}]};
+</script>
+<script>
+"use strict";
+/* ===================== Word Brawl — learn English, brawl-style ===================== */
+const el=id=>document.getElementById(id);
+const $=(s,r=document)=>r.querySelector(s);
+const app=el('app');
+const DAY=86400000, now=()=>Date.now();
+const WORDS=(window.VOCAB&&window.VOCAB.words)||[];
+const byId=Object.fromEntries(WORDS.map(w=>[w.id,w]));
+
+/* ---------- characters ---------- */
+const CHARS=[
+ {id:'sparky',emoji:'✨',he:'ספארקי',name:'Sparky',rar:'common',glow:'#00e5ff'},
+ {id:'coco',emoji:'🐨',he:'קוקו',name:'Coco',rar:'common',glow:'#8bd3ff'},
+ {id:'rocky',emoji:'🪨',he:'רוקי',name:'Rocky',rar:'common',glow:'#b0a58f'},
+ {id:'luna',emoji:'🦄',he:'לונה',name:'Luna',rar:'rare',glow:'#ff8bd3'},
+ {id:'roary',emoji:'🦁',he:'רוארי',name:'Roary',rar:'rare',glow:'#ffb03f'},
+ {id:'blaze',emoji:'🐉',he:'בלייז',name:'Blaze',rar:'epic',glow:'#ff5a3c'},
+ {id:'pixel',emoji:'👾',he:'פיקסל',name:'Pixel',rar:'epic',glow:'#a24bff'},
+ {id:'bolt',emoji:'⚡',he:'בולט',name:'Bolt',rar:'epic',glow:'#ffe23f'},
+ {id:'star',emoji:'🌟',he:'סטאר',name:'Star',rar:'legendary',glow:'#ffd23f'},
+ {id:'neo',emoji:'🤖',he:'ניאו',name:'Neo',rar:'legendary',glow:'#00e5ff'},
+];
+const charById=Object.fromEntries(CHARS.map(c=>[c.id,c]));
+const ENEMIES=[
+ {e:'👹',he:'הגובלין'},{e:'🐲',he:'הדרקון'},{e:'🦖',he:'הרקס'},{e:'👻',he:'הרוח'},
+ {e:'🧟',he:'הזומבי'},{e:'🦑',he:'המפלצת'},{e:'🤡',he:'הליצן'},{e:'🐙',he:'התמנון'},{e:'🕷️',he:'העכביש'}
+];
+
+/* ---------- state ---------- */
+const KEY='wb_state_v2';
+function blank(){return{
+  profile:null,
+  settings:{sfx:true,speech:true,aiProvider:'off',aiKey:''},
+  prog:{},
+  stats:{streak:0,lastDay:null,minutes:0,correct:0,total:0,trophies:0,coins:0,gems:0,xp:0,bestCombo:0,wins:0},
+  chars:{owned:['sparky'],sel:'sparky'},
+  claimed:[],
+  story:{texts:{}},
+  ver:2
+};}
+let S=load();
+function load(){try{const r=localStorage.getItem(KEY);if(!r)return blank();const p=JSON.parse(r);const b=blank();
+  return Object.assign(b,p,{settings:Object.assign(b.settings,p.settings||{}),stats:Object.assign(b.stats,p.stats||{}),chars:Object.assign(b.chars,p.chars||{})});
+ }catch(e){return blank();}}
+function save(){localStorage.setItem(KEY,JSON.stringify(S));}
+
+/* ---------- spaced repetition (learning engine) ---------- */
+function pget(id){return S.prog[id]||(S.prog[id]={m:0,c:0,w:0,next:0,seen:false});}
+function grade(id,ok){const p=pget(id);p.seen=true;
+  if(ok){p.c++;p.m=Math.min(5,p.m+1);}else{p.w++;p.m=Math.max(0,p.m-1);}
+  const gaps=[0,1,2,4,8,16];p.next=now()+(ok?gaps[p.m]*DAY:0.02*DAY);
+  S.stats.total++;if(ok)S.stats.correct++;}
+function masteredCount(){return WORDS.filter(w=>pget(w.id).m>=4).length;}
+function weakWords(){return WORDS.filter(w=>{const p=pget(w.id);return p.seen&&p.m<=1;});}
+function dueWords(){return WORDS.filter(w=>{const p=pget(w.id);return p.seen&&p.next<=now()&&p.m<5;});}
+function newWords(cap){return WORDS.filter(w=>!pget(w.id).seen&&(!cap||w.unit<=cap));}
+function pickDaily(n=14){
+  // Priority: words she STRUGGLES with come back most, then scheduled reviews, then new words.
+  const cap=Math.min(5,1+Math.floor(masteredCount()/40));
+  const weak=shuffle(weakWords());          // seen & low mastery -> reinforce hardest
+  const due=shuffle(dueWords());            // spaced-repetition schedule
+  const fresh=shuffle(newWords(cap));       // gradually introduce new words
+  const set=[];
+  const add=arr=>{for(const w of arr){if(set.length>=n)break;if(!set.includes(w))set.push(w);}};
+  add(weak.slice(0,Math.ceil(n*0.5)));      // up to ~50% of the round = struggling words
+  add(due);
+  add(fresh);
+  add(shuffle(WORDS.filter(w=>pget(w.id).m<4)));   // backfill: anything not yet mastered
+  add(shuffle(WORDS));                             // last resort
+  return shuffle(set).slice(0,n);
+}
+
+/* ---------- utils ---------- */
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function show(html){app.innerHTML=html;window.scrollTo(0,0);}
+function speak(t){if(!S.settings.speech||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+window._spk=t=>speak(t);
+/* audio sfx */
+let AC=null;
+function ensureAudio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();}
+function tone(freq,dur,type,vol,when){const a=AC;if(!a||!S.settings.sfx)return;const o=a.createOscillator(),g=a.createGain();
+  o.type=type||'sine';o.frequency.value=freq;o.connect(g);g.connect(a.destination);const t=a.currentTime+(when||0);
+  g.gain.setValueAtTime(vol||.2,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.start(t);o.stop(t+dur);}
+function sfx(n,x){
+  if(!S.settings.sfx)return;
+  if(n==='correct'){tone(660,.12,'triangle',.2);tone(990,.14,'triangle',.15,.08);}
+  else if(n==='wrong'){tone(180,.28,'sawtooth',.16);}
+  else if(n==='combo'){tone(600+Math.min(x||0,10)*70,.1,'square',.16);}
+  else if(n==='win'){[523,659,784,1046,1318].forEach((f,i)=>tone(f,.2,'triangle',.2,i*.11));}
+  else if(n==='chest'){[440,660,880,1320].forEach((f,i)=>tone(f,.16,'sine',.18,i*.1));}
+  else if(n==='hit'){tone(110,.16,'square',.2);}
+  else if(n==='click'){tone(520,.05,'sine',.12);}
+}
+function confetti(){const c=el('confetti');const cols=['#ffd23f','#25f4a0','#ff2e97','#00e5ff','#a24bff','#ff7a3c'];
+  for(let i=0;i<70;i++){const d=document.createElement('div');d.className='conf';d.style.left=Math.random()*100+'vw';
+    d.style.background=cols[i%cols.length];d.style.animationDuration=(1.5+Math.random()*1.6)+'s';d.style.top=(-10-Math.random()*20)+'px';
+    c.appendChild(d);setTimeout(()=>d.remove(),3400);}}
+function shakeScreen(){app.classList.add('shakeit');setTimeout(()=>app.classList.remove('shakeit'),420);}
+function checkStreak(){const t=new Date().toDateString();if(S.stats.lastDay===t)return;
+  const y=new Date(now()-DAY).toDateString();S.stats.streak=(S.stats.lastDay===y)?S.stats.streak+1:1;S.stats.lastDay=t;save();}
+function rankName(){const x=S.stats.trophies;const ranks=[[0,'מתחיל 🥉'],[40,'לוחם 🥈'],[100,'אלוף 🥇'],[200,'מאסטר 💎'],[350,'אגדה 👑']];
+  let r=ranks[0][1];ranks.forEach(k=>{if(x>=k[0])r=k[1];});return r;}
+function lvl(){return 1+Math.floor(S.stats.xp/100);}
+
+/* ---------- distractors ---------- */
+function distractors(correct,keyName,n=3){const cval=correct[keyName];const seen=new Set([cval]);const out=[];
+  for(const w of shuffle(WORDS)){if(w.id===correct.id||seen.has(w[keyName]))continue;seen.add(w[keyName]);out.push(w);if(out.length>=n)break;}
+  return shuffle([correct,...out]);}
+
+/* ============================ SCREENS ============================ */
+/* Onboarding */
+function screenOnboard(){show(`<div class="screen active">
+  <div class="center" style="margin-top:22px"><div style="font-size:64px">⚔️✨</div><h1>Word Brawl</h1><p class="muted">קרב מילים — לומדים אנגלית ומנצחים</p></div>
+  <div class="panel"><h2>בוא/י נתחיל 👋</h2>
+    <label>איך קוראים לך?</label><input id="i-name" placeholder="השם שלך" autocomplete="off">
+    <label>מה הכי כיף לך?</label>
+    <select id="i-interest"><option>בעלי חיים</option><option>כדורגל</option><option>ציור ואומנות</option><option>חלל וכוכבים</option><option>נסיכות ואגדות</option><option>דינוזאורים</option><option>מוזיקה</option><option>ספורט</option><option>בישול</option><option>משחקי מחשב</option></select>
+    <label>קוד הורים (4 ספרות)</label><input id="i-pin" inputmode="numeric" maxlength="4" placeholder="למשל 1234">
+    <div style="height:14px"></div><button class="btn mega" onclick="doOnboard()">כניסה לארנה 🚀</button>
+  </div></div>`);}
+window.doOnboard=function(){ensureAudio();sfx('click');
+  S.profile={name:($('#i-name').value.trim()||'לוחם/ת'),interest:$('#i-interest').value,pin:(($('#i-pin').value.trim()||'0000').slice(0,4))};
+  save();screenHome();};
+
+/* Home / Arena hub */
+function screenHome(){checkStreak();const c=charById[S.chars.sel]||CHARS[0];
+  const xpInLvl=S.stats.xp%100;
+  show(`<div class="screen active">
+    <div class="chips">
+      <span class="chip">🏆 ${S.stats.trophies}</span>
+      <span class="chip">🪙 ${S.stats.coins}</span>
+      <span class="chip">💎 ${S.stats.gems}</span>
+      <span class="chip">🔥 ${S.stats.streak}</span>
+    </div>
+    <div class="panel hero" style="--glow:${c.glow}">
+      <div class="avatar" style="--glow:${c.glow}">${c.emoji}</div>
+      <div class="namebig">${S.profile.name}</div>
+      <div class="rank">${rankName()} · רמה ${lvl()}</div>
+      <div class="bar xpbar" style="width:70%;margin-top:6px"><i style="width:${xpInLvl}%"></i></div>
+      <small class="muted">${xpInLvl}/100 XP לרמה הבאה</small>
+    </div>
+    <button class="btn mega" onclick="startBattle()">⚔️ קרב מילים!</button>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost" onclick="screenChars()">🦸 דמויות</button>
+      <button class="btn ghost" onclick="screenRoad()">🏆 מסלול גביעים</button>
+    </div>
+    <div class="row">
+      <button class="btn ghost" onclick="screenPractice()">🎮 תרגול</button>
+      <button class="btn ghost" onclick="openStory()">📖 סיפור</button>
+    </div>
+    <div class="center" style="margin-top:10px">
+      <a class="link" onclick="parentGate()">👨‍👩‍👧 הורים</a> &nbsp;·&nbsp; <a class="link" onclick="screenSettings()">⚙️ הגדרות</a>
+    </div>
+  </div>`);}
+
+/* ---------- BATTLE ---------- */
+let BT=null;
+/* emoji map for picture rounds */
+const EMOJI={daughter:'👧',son:'👦',uncle:'🧔',aunt:'👩',husband:'👨',wife:'👩',grandson:'👶',granddaughter:'👶',parent:'👪',neighbor:'🏘️',dancer:'💃',singer:'🎤',painter:'🎨',farmer:'👨‍🌾',runner:'🏃',writer:'✍️',artist:'🧑‍🎨',player:'⚽',student:'🧑‍🎓',waiter:'🧑‍🍳',doll:'🪆',jacket:'🧥',jeans:'👖',blouse:'👚',taxi:'🚕',movie:'🎬',radio:'📻',ticket:'🎫',camera:'📷',watch:'⌚',clock:'🕐',storm:'⛈️',heart:'❤️',finger:'👆',teeth:'🦷',knee:'🦵',neck:'🧣',forest:'🌲',river:'🏞️',sand:'🏖️',tent:'⛺',plant:'🌱',flower:'🌸',bottle:'🍼',glass:'🥛',bank:'🏦',cinema:'🎦',city:'🏙️',museum:'🏛️',supermarket:'🏪',restaurant:'🍽️',market:'🛒',road:'🛣️',village:'🏘️',building:'🏢',flat:'🏠',bathroom:'🛁',toilet:'🚽',sofa:'🛋️',cucumber:'🥒',garlic:'🧄',onion:'🧅',pepper:'🌶️',watermelon:'🍉',rice:'🍚',steak:'🥩',jam:'🍓',butter:'🧈',salt:'🧂',sugar:'🍬',tea:'🍵',cup:'☕',spoon:'🥄',breakfast:'🍳',candy:'🍬',toy:'🧸',guitar:'🎸',piano:'🎹',song:'🎵',present:'🎁',card:'💌',medal:'🏅',prize:'🏆',race:'🏁',winner:'🥇',money:'💰',ice:'🧊',plate:'🍽️',trip:'🧳',flower2:'🌷',clock2:'⏰',hour:'🕐',rain:'🌧️',raincoat:'🧥',fall:'🍂',light:'💡',key:'🔑',letter:'✉️',book:'📖',guitar2:'🎸'};
+function emojiFor(w){return EMOJI[w.word]||EMOJI[w.word.toLowerCase()]||null;}
+/* fill-in-the-blank example sentences (each contains the target word) */
+const SENT={
+ drive:"My dad can drive a car.",laugh:"The funny clown made us laugh.",speak:"I can speak two languages.",
+ cook:"My mom likes to cook dinner.",kick:"You kick the ball with your foot.",throw:"Please throw the ball to me.",
+ give:"Please give me the book.",teach:"My teacher will teach us English.",study:"I study for my test every night.",
+ sell:"They sell fruit at the market.",build:"We will build a big sandcastle.",paint:"The artist likes to paint pictures.",
+ wash:"Wash your hands before you eat.",hear:"I can hear the music.",catch:"Try to catch the ball!",
+ push:"Push the door to open it.",hold:"Please hold my hand.",choose:"You can choose any color you like.",
+ find:"I can not find my keys.",fix:"Dad will fix my bike.",wait:"Please wait for me here.",
+ cry:"The baby began to cry.",forget:"Do not forget your homework!",remember:"I remember your birthday.",
+ rice:"We eat rice with chicken.",watermelon:"In summer I love to eat watermelon.",onion:"The onion made me cry.",
+ garlic:"She put garlic in the soup.",cucumber:"A cucumber is green and long.",pepper:"The hot pepper is very spicy.",
+ salt:"Please pass the salt.",sugar:"I put sugar in my tea.",tea:"My grandma drinks hot tea.",
+ butter:"I spread butter on my bread.",jam:"I like jam on my toast.",steak:"He ate a big steak for dinner.",
+ breakfast:"I eat breakfast in the morning.",supper:"We have supper in the evening.",recipe:"Follow the recipe to make a cake.",
+ bathroom:"I brush my teeth in the bathroom.",toilet:"The toilet is in the bathroom.",sofa:"We sit on the sofa to watch TV.",
+ classroom:"The students sit in the classroom.",building:"The tall building has many floors.",flat:"We live in a small flat.",
+ bank:"Mom keeps her money in the bank.",cinema:"We watched a film at the cinema.",museum:"We saw old art at the museum.",
+ supermarket:"We buy food at the supermarket.",market:"They sell fruit at the market.",restaurant:"We ate dinner at a nice restaurant.",
+ forest:"Many trees grow in the forest.",river:"The river flows to the sea.",tent:"We sleep in a tent when we camp.",
+ heart:"My heart beats fast when I run.",teeth:"Brush your teeth every day.",finger:"I wear a ring on my finger.",
+ knee:"I hurt my knee when I fell.",neck:"The giraffe has a long neck.",yesterday:"Yesterday I went to school.",
+ tomorrow:"We will play tomorrow.",tonight:"We will watch a movie tonight.",always:"I always brush my teeth.",
+ often:"She often visits her grandma.",month:"January is the first month of the year.",year:"There are twelve months in a year.",
+ weekend:"We rest on the weekend.",guitar:"He plays the guitar in a band.",piano:"She plays a song on the piano.",
+ song:"We sang a happy song.",present:"I got a present for my birthday.",camera:"I took a photo with my camera.",
+ ticket:"I need a ticket to see the movie.",doll:"The girl plays with her doll.",toy:"The baby plays with a toy.",
+ movie:"We watched a funny movie.",radio:"I listen to music on the radio.",taxi:"We took a taxi to the airport.",
+ money:"I saved my money to buy a game.",medal:"The winner got a gold medal.",prize:"She won first prize.",
+ strong:"The strong man lifted the heavy box.",heavy:"The box is too heavy to lift.",difficult:"The test was very difficult.",
+ easy:"The game was easy to play.",quiet:"Please be quiet in the library.",dark:"It is dark at night.",
+ rich:"The rich man has a big house.",poor:"The poor man had no money.",sick:"I stayed home because I was sick.",
+ friendly:"My new neighbor is very friendly.",sweet:"The candy is very sweet.",storm:"The storm had loud thunder.",
+ raincoat:"Wear a raincoat when it rains.",jacket:"It is cold, so wear a jacket.",jeans:"He wears blue jeans.",
+ blouse:"She wore a pretty blouse."
+};
+function fillFor(w){return SENT[w.word]||SENT[w.word.toLowerCase()]||null;}
+let lastType=null;
+window.startBattle=function(){ensureAudio();sfx('click');
+  const words=pickDaily(16);words.forEach(w=>pget(w.id));lastType=null;
+  BT={words,i:0,combo:0,hearts:3,hp:100,max:100,correct:0,total:0,start:now(),enemy:ENEMIES[Math.random()*ENEMIES.length|0],timer:null,tl:0,tmax:9000,cur:null,answered:false};
+  battleRound();};
+function stopTimer(){if(BT&&BT.timer){clearInterval(BT.timer);BT.timer=null;}}
+function typesFor(w){const t=['match','reverse','listen'];
+  if(emojiFor(w))t.push('emoji');
+  if(fillFor(w))t.push('fillblank');
+  if(!w.word.includes(' ')&&w.word.length<=9)t.push('scramble');
+  if(!w.word.includes(' ')&&w.word.length<=11)t.push('spell');
+  return t;}
+function optRow(opts,key,wid){return opts.map(o=>`<button class="opt" data-id="${o.id}" onclick="battleAns(this,'${o.id}','${wid}')">${o[key]}</button>`).join('');}
+function arena(w,body,dur,after){
+  const c=charById[S.chars.sel]||CHARS[0];
+  const hearts='❤️'.repeat(BT.hearts)+'🖤'.repeat(3-BT.hearts);
+  show(`<div class="screen active">
+    <div class="panel" style="padding:12px">
+      <div class="enemy"><div class="mon" id="mon">${BT.enemy.e}</div>
+        <div style="width:100%"><div class="bar hpbar"><i id="hp" style="width:${BT.hp/BT.max*100}%"></i></div>
+        <small class="muted">${BT.enemy.he} · ${Math.max(0,Math.ceil(BT.hp))} HP</small></div></div>
+    </div>
+    <div class="center"><div class="combo" id="combo">${BT.combo>1?'🔥 קומבו x'+BT.combo:''}</div></div>
+    <div class="panel center" id="gbody">${body}
+      <div class="bar timebar" style="margin-top:14px"><i id="tbar" style="width:100%"></i></div></div>
+    <div class="center" style="margin-top:8px"><span class="chip">${c.emoji} ${c.name}</span> <span class="hearts">${hearts}</span></div>
+  </div>`);
+  BT.cur=w.id;BT.tmax=dur;BT.tl=dur;stopTimer();
+  BT.timer=setInterval(()=>{BT.tl-=100;const tb=el('tbar');if(tb)tb.style.width=Math.max(0,BT.tl/BT.tmax*100)+'%';
+    if(BT.tl<=0){stopTimer();if(!BT.answered)timeUp(w.id);}},100);
+  if(after)after();
+}
+function battleRound(){
+  if(BT.hp<=0)return battleWin();
+  if(BT.hearts<=0)return battleLose();
+  const w=BT.words[BT.i%BT.words.length];BT.i++;BT.answered=false;
+  let types=typesFor(w).filter(x=>x!==lastType);if(!types.length)types=typesFor(w);
+  const type=types[Math.random()*types.length|0];lastType=type;
+  if(type==='match'){const o=distractors(w,'hebrew');
+    arena(w,`<button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button><div class="qword">${w.word}</div><div class="muted">מה הפירוש?</div><div class="opts">${optRow(o,'hebrew',w.id)}</div>`,14000,()=>speak(w.word));}
+  else if(type==='reverse'){const o=distractors(w,'word');
+    arena(w,`<div class="qword" style="font-size:2rem">${w.hebrew}</div><div class="muted">בחר/י באנגלית</div><div class="opts">${optRow(o,'word',w.id)}</div>`,14000);}
+  else if(type==='listen'){const o=distractors(w,'hebrew');
+    arena(w,`<button class="btn" style="width:auto;padding:14px 26px;margin:6px auto" onclick="window._spk('${esc(w.word)}')">🔊 שמע/י שוב</button><div class="muted">מה שמעת?</div><div class="opts">${optRow(o,'hebrew',w.id)}</div>`,14000,()=>setTimeout(()=>speak(w.word),300));}
+  else if(type==='emoji'){const o=distractors(w,'word');
+    arena(w,`<div style="font-size:76px">${emojiFor(w)}</div><div class="muted">איזו מילה זו?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,14000);}
+  else if(type==='fillblank'){const o=distractors(w,'word');
+    const re=new RegExp('\\b'+w.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+    const blanked=fillFor(w).replace(re,'<span style="color:var(--gold)">＿＿＿</span>');
+    arena(w,`<div style="font-size:1.35rem;line-height:1.7;font-weight:700">${blanked}</div><div class="muted">איזו מילה משלימה את המשפט?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,17000);}
+  else if(type==='scramble'){const letters=shuffle(w.word.toLowerCase().split(''));
+    arena(w,`<div class="muted">${w.hebrew} — סדר/י את המילה</div><button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button>
+      <div class="slot" id="bslot"></div><div class="tiles" id="btiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="bAddL(this)">${l}</button>`).join('')}</div>`,22000);
+    window._bcur='';window._btar=w.word.toLowerCase();window._bwid=w.id;}
+  else if(type==='spell'){
+    arena(w,`<div class="muted">${w.hebrew} — כתבו באנגלית</div><button class="btn" style="width:auto;padding:12px 22px;margin:4px auto" onclick="window._spk('${esc(w.word)}')">🔊 שמע/י</button>
+      <input id="bspin" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="הקלד/י" style="margin:10px 0;text-align:center;font-size:1.3rem"><button class="btn" onclick="bSpell('${w.id}')">בדיקה ✓</button>`,24000,
+      ()=>{speak(w.word);const i=el('bspin');if(i){i.focus();i.addEventListener('keydown',e=>{if(e.key==='Enter')window.bSpell(w.id);});}});}
+}
+function timeUp(wid){if(BT.answered)return;
+  const opts=[...document.querySelectorAll('.opt')];opts.forEach(b=>{b.onclick=null;if(b.dataset.id===wid)b.classList.add('good');});
+  const cm=el('combo');if(cm)cm.textContent='⏱️ מהר יותר!';resolve(false,wid);}
+function resolve(ok,wid){
+  if(BT.answered)return;BT.answered=true;stopTimer();BT.total++;grade(wid,ok);
+  if(ok){BT.correct++;BT.combo++;if(BT.combo>S.stats.bestCombo)S.stats.bestCombo=BT.combo;
+    const speed=Math.max(0,BT.tl/BT.tmax);const mult=1+Math.min(BT.combo-1,8)*0.25;const dmg=Math.round((16+speed*10)*mult);
+    BT.hp-=dmg;speak(byId[wid].word);sfx('correct');if(BT.combo>=2)sfx('combo',BT.combo);
+    const mon=el('mon');if(mon)mon.classList.add('hit');popDmg(dmg);
+    const hp=el('hp');if(hp)hp.style.width=Math.max(0,BT.hp/BT.max*100)+'%';
+    const cm=el('combo');if(cm&&BT.combo>1){cm.textContent='🔥 קומבו x'+BT.combo;cm.classList.add('big');}
+  }else{BT.hearts--;BT.combo=0;sfx('wrong');shakeScreen();}
+  save();setTimeout(battleRound,ok?800:1400);
+}
+window.battleAns=function(btn,chosen,correct){
+  if(BT.answered)return;const ok=chosen===correct;const opts=[...btn.parentElement.children];opts.forEach(b=>b.onclick=null);
+  btn.classList.add(ok?'good':'bad');if(!ok){const c=opts.find(b=>b.dataset.id===correct);if(c)c.classList.add('good');}
+  resolve(ok,correct);};
+window.bAddL=function(b){if(BT.answered)return;b.style.visibility='hidden';window._bcur+=b.dataset.l;
+  const s=el('bslot');const c=document.createElement('span');c.className='slotchip';c.textContent=b.dataset.l;s.appendChild(c);sfx('click');
+  if(window._bcur.length===window._btar.length){const ok=window._bcur===window._btar;s.style.borderColor=ok?'#25f4a0':'#ff4d6d';
+    if(!ok)el('gbody').insertAdjacentHTML('afterbegin',`<p style="color:#25f4a0;font-weight:800">${byId[window._bwid].word}</p>`);
+    resolve(ok,window._bwid);}};
+window.bSpell=function(id){if(BT.answered)return;const v=(el('bspin').value||'').trim().toLowerCase();const ok=v===byId[id].word.toLowerCase();
+  el('bspin').style.borderColor=ok?'#25f4a0':'#ff4d6d';
+  if(!ok)el('gbody').insertAdjacentHTML('beforeend',`<p style="color:#25f4a0;font-weight:800">${byId[id].word}</p>`);
+  resolve(ok,id);};
+function popDmg(d){const mon=el('mon');if(!mon||!mon.parentElement)return;const s=document.createElement('span');s.className='dmg';s.textContent='-'+d;
+  s.style.left='50%';s.style.top='0';mon.parentElement.appendChild(s);setTimeout(()=>s.remove(),1000);}
+function battleWin(){stopTimer();
+  const mins=Math.max(1,Math.round((now()-BT.start)/60000));S.stats.minutes+=mins;S.stats.wins++;
+  const acc=BT.total?Math.round(BT.correct/BT.total*100):0;
+  const tier=BT.hearts===3?'gold':BT.hearts===2?'silver':'wooden';
+  const trophies=20+(BT.hearts*5);S.stats.trophies+=trophies;
+  S.stats.xp+=BT.correct*12+30;
+  save();confetti();sfx('win');
+  const chestName={gold:'תיבת זהב 🥇',silver:'תיבת כסף 🥈',wooden:'תיבת עץ 📦'}[tier];
+  const chestIcon={gold:'🧰',silver:'🧰',wooden:'📦'}[tier];
+  show(`<div class="screen active"><div class="panel center" style="margin-top:30px">
+    <div style="font-size:60px">🎉</div><h1>ניצחת!</h1>
+    <p class="muted">הבסת את ${BT.enemy.he} · דיוק ${acc}% · קומבו שיא ${S.stats.bestCombo}</p>
+    <div class="reward">🏆 +${trophies} גביעים</div>
+    <div class="reward">⭐ +${BT.correct*12+30} XP</div>
+    <div style="margin:16px 0"><div class="chest wob" id="chest" onclick="openChest('${tier}')">${chestIcon}</div>
+      <div class="th">${chestName}</div><small class="muted">לחצו על התיבה לפתיחה!</small></div>
+    <div id="loot"></div>
+    <button class="btn" onclick="screenHome()">חזרה לארנה 🏠</button>
+    <div style="height:8px"></div><button class="btn ghost" onclick="startBattle()">קרב נוסף ⚔️</button>
+  </div></div>`);
+}
+function battleLose(){stopTimer();
+  const mins=Math.max(1,Math.round((now()-BT.start)/60000));S.stats.minutes+=mins;
+  const consol=15;S.stats.coins+=consol;save();sfx('wrong');
+  show(`<div class="screen active"><div class="panel center" style="margin-top:34px">
+    <div style="font-size:60px">💪</div><h1>כמעט!</h1>
+    <p class="muted">${BT.enemy.he} היה חזק הפעם — אבל למדת ${BT.correct} מילים בקרב!</p>
+    <div class="reward">🪙 +${consol} מטבעות ניחומים</div>
+    <button class="btn mega" onclick="startBattle()">נסה/י שוב ⚔️</button>
+    <div style="height:8px"></div><button class="btn ghost" onclick="screenHome()">חזרה לארנה 🏠</button>
+  </div></div>`);
+}
+window.openChest=function(tier){const ch=el('chest');if(!ch||ch.dataset.done)return;ch.dataset.done='1';
+  ch.classList.remove('wob');ch.textContent='✨';sfx('chest');confetti();
+  const base={wooden:[20,40,1],silver:[40,70,2],gold:[70,120,3]}[tier];
+  const coins=base[0]+Math.floor(Math.random()*(base[1]-base[0]));const gems=base[2];
+  S.stats.coins+=coins;S.stats.gems+=gems;
+  let charLine='';const chance={wooden:.3,silver:.55,gold:.85}[tier];
+  const locked=CHARS.filter(c=>!S.chars.owned.includes(c.id));
+  if(locked.length&&Math.random()<chance){const nc=weightedChar(locked);S.chars.owned.push(nc.id);
+    charLine=`<div class="reward" style="border-color:${nc.glow}">${nc.emoji} דמות חדשה: ${nc.name}! <span class="rar ${nc.rar}">${nc.rar}</span></div>`;}
+  save();
+  el('loot').innerHTML=`<div class="reward">🪙 +${coins} מטבעות</div><div class="reward">💎 +${gems} יהלומים</div>${charLine}`;
+};
+function weightedChar(list){const wts={common:50,rare:25,epic:12,legendary:4};const pool=[];list.forEach(c=>{for(let i=0;i<wts[c.rar];i++)pool.push(c);});return pool[Math.random()*pool.length|0];}
+
+/* ---------- Characters ---------- */
+function screenChars(){sfx('click');
+  show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
+   <div class="panel"><h2>הדמויות שלי 🦸</h2><p class="muted">${S.chars.owned.length}/${CHARS.length} נאספו · לחצו לבחירה</p>
+    <div class="cgrid">${CHARS.map(c=>{const own=S.chars.owned.includes(c.id);const sel=S.chars.sel===c.id;
+      return `<div class="cell ${own?'':'lock'} ${sel?'sel':''}" ${own?`onclick="pickChar('${c.id}')"`:''}>
+        <div class="ca">${own?c.emoji:'❓'}</div><div style="font-weight:800">${own?c.name:'נעול'}</div>
+        <span class="rar ${c.rar}">${c.rar}</span></div>`;}).join('')}</div>
+    <p class="muted" style="margin-top:12px">פותחים דמויות חדשות מתיבות אוצר וממסלול הגביעים 🎁</p>
+   </div></div>`);}
+window.pickChar=function(id){if(!S.chars.owned.includes(id))return;S.chars.sel=id;save();sfx('correct');screenChars();};
+
+/* ---------- Trophy Road ---------- */
+const ROAD=[
+ {t:15,type:'coins',v:50,rw:'🪙'},{t:30,type:'char',v:'coco',rw:'🐨'},{t:50,type:'gems',v:5,rw:'💎'},
+ {t:75,type:'char',v:'luna',rw:'🦄'},{t:110,type:'coins',v:120,rw:'🪙'},{t:150,type:'char',v:'blaze',rw:'🐉'},
+ {t:200,type:'char',v:'bolt',rw:'⚡'},{t:280,type:'char',v:'star',rw:'🌟'},{t:380,type:'char',v:'neo',rw:'🤖'}
+];
+function screenRoad(){sfx('click');
+  show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
+   <div class="panel"><h2>מסלול גביעים 🏆</h2><p class="muted">יש לך ${S.stats.trophies} גביעים · תזכה/י בפרסים ככל שתנצח/י בקרבות</p>
+    <div class="road">${ROAD.map((m,i)=>{const reached=S.stats.trophies>=m.t;const claimable=reached&&!S.claimed.includes(i);
+      return `<div class="mile ${reached?'reached':''} ${claimable?'claim':''}"><div class="line"></div>
+        <div class="rw">${m.rw}</div><div class="dot"></div><div class="th">${m.t}🏆</div>
+        ${claimable?`<button class="btn gold" style="padding:8px;font-size:.85rem" onclick="claimMile(${i})">קבל/י</button>`:reached?'<small class="muted">✓ נלקח</small>':'<small class="muted">נעול</small>'}</div>`;}).join('')}</div>
+   </div></div>`);}
+window.claimMile=function(i){const m=ROAD[i];if(!m||S.claimed.includes(i)||S.stats.trophies<m.t)return;
+  S.claimed.push(i);
+  if(m.type==='coins')S.stats.coins+=m.v;else if(m.type==='gems')S.stats.gems+=m.v;
+  else if(m.type==='char'){if(!S.chars.owned.includes(m.v))S.chars.owned.push(m.v);else S.stats.coins+=50;}
+  save();sfx('chest');confetti();screenRoad();};
+
+/* ---------- Free practice (single games incl. scramble/spell/memory) ---------- */
+function screenPractice(){sfx('click');
+  show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
+   <div class="panel center"><h2>תרגול חופשי 🎮</h2><p class="muted">בלי לחץ, בלי טיימר</p>
+    <button class="btn" onclick="soloScramble()">🔀 סידור אותיות</button><div style="height:8px"></div>
+    <button class="btn" onclick="soloSpell()">✍️ איות</button><div style="height:8px"></div>
+    <button class="btn" onclick="soloMemory()">🧠 זיכרון</button>
+   </div></div>`);}
+function practiceWrap(inner,title){show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenPractice()">‹ חזרה</a></div>
+  <div class="panel center"><h2>${title}</h2><div id="gbody">${inner}</div></div></div>`);}
+window.soloScramble=function(){const qs=shuffle(pickDaily(14).filter(w=>!w.word.includes(' ')&&w.word.length<=9)).slice(0,6);let q=0;
+  function ask(){if(q>=qs.length)return screenPractice();const w=qs[q];const letters=shuffle(w.word.toLowerCase().split(''));
+    practiceWrap(`<p class="muted">${w.hebrew}</p><button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button>
+      <div class="slot" id="slot"></div><div class="tiles" id="tiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="addL(this)">${l}</button>`).join('')}</div>
+      <button class="btn ghost" style="width:auto;padding:10px 18px" onclick="clrL()">↺ נקה</button>`,'סידור אותיות 🔀');
+    window._cur='';window._t=w.word.toLowerCase();window._tw=w.id;}
+  window.addL=function(b){b.style.visibility='hidden';window._cur+=b.dataset.l;const s=el('slot');const c=document.createElement('span');c.className='slotchip';c.textContent=b.dataset.l;s.appendChild(c);sfx('click');
+    if(window._cur.length===window._t.length){const ok=window._cur===window._t;s.style.borderColor=ok?'#25f4a0':'#ff4d6d';grade(window._tw,ok);save();
+      if(ok){speak(byId[window._tw].word);sfx('correct');}else sfx('wrong');setTimeout(()=>{q++;ask();},ok?800:1400);}};
+  window.clrL=function(){window._cur='';el('slot').innerHTML='';[...el('tiles').children].forEach(b=>b.style.visibility='visible');};
+  ask();};
+window.soloSpell=function(){const qs=shuffle(pickDaily(14).filter(w=>!w.word.includes(' '))).slice(0,6);let q=0;
+  function ask(){if(q>=qs.length)return screenPractice();const w=qs[q];
+    practiceWrap(`<p class="muted">${w.hebrew}</p><button class="btn" style="width:auto;padding:12px 22px;margin:0 auto" onclick="window._spk('${esc(w.word)}')">🔊 שמע/י</button>
+      <input id="spin" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="הקלד/י באנגלית" style="margin:14px 0;text-align:center;font-size:1.35rem">
+      <button class="btn" onclick="chkSpell('${w.id}')">בדיקה ✓</button>`,'איות ✍️');
+    setTimeout(()=>{speak(w.word);const i=el('spin');if(i){i.focus();i.addEventListener('keydown',e=>{if(e.key==='Enter')window.chkSpell(w.id);});}},300);}
+  window.chkSpell=function(id){const v=(el('spin').value||'').trim().toLowerCase();const ok=v===byId[id].word.toLowerCase();
+    el('spin').style.borderColor=ok?'#25f4a0':'#ff4d6d';grade(id,ok);save();
+    if(ok)sfx('correct');else{sfx('wrong');el('gbody').insertAdjacentHTML('beforeend',`<p style="color:#25f4a0;font-weight:800">${byId[id].word}</p>`);}
+    setTimeout(()=>{q++;ask();},ok?750:1500);};
+  ask();};
+window.soloMemory=function(){const picks=shuffle(pickDaily(10)).slice(0,5);let cards=[];
+  picks.forEach(w=>{cards.push({id:w.id,face:w.word,en:1});cards.push({id:w.id,face:w.hebrew,en:0});});
+  cards=shuffle(cards).map((c,i)=>({...c,i}));const map=Object.fromEntries(cards.map(c=>[c.i,c]));
+  practiceWrap(`<div class="cgrid" id="mgrid" style="grid-template-columns:repeat(4,1fr)">${cards.map(c=>`<div class="cell" data-i="${c.i}" onclick="flipC(${c.i})">❓</div>`).join('')}</div><p class="muted" id="mm">מצא/י את כל הזוגות</p>`,'זיכרון 🧠');
+  let open=[],done=0,lock=false;
+  window.flipC=function(i){if(lock)return;const n=$(`[data-i="${i}"]`,el('mgrid'));if(!n||n.classList.contains('sel')||n.dataset.done)return;
+    n.classList.add('sel');n.textContent=map[i].face;if(map[i].en)speak(map[i].face);sfx('click');open.push(i);
+    if(open.length===2){lock=true;const[a,b]=open;const na=$(`[data-i="${a}"]`,el('mgrid')),nb=$(`[data-i="${b}"]`,el('mgrid'));const ok=map[a].id===map[b].id;
+      setTimeout(()=>{if(ok){na.dataset.done=nb.dataset.done='1';na.style.borderColor=nb.style.borderColor='#25f4a0';done++;grade(map[a].id,true);save();sfx('correct');
+          if(done===picks.length){el('mm').textContent='כל הכבוד! 🎉';confetti();setTimeout(screenPractice,1000);}}
+        else{na.classList.remove('sel');nb.classList.remove('sel');na.textContent=nb.textContent='❓';sfx('wrong');}open=[];lock=false;},ok?500:900);}};};
+
+/* ---------- Story (AI + fallback) ---------- */
+window.openStory=async function(){sfx('click');
+  show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
+   <div class="panel"><h2>📖 הסיפור שלך</h2><div id="story"><p class="muted">כותב/ת לך סיפור…</p></div></div></div>`);
+  const idx=Math.min(Math.floor(masteredCount()/25),5);let text=S.story.texts[idx];
+  if(!text){text=await genStory(idx);S.story.texts[idx]=text;save();}
+  el('story').innerHTML=`<p style="font-size:1.12rem;line-height:1.85">${text.replace(/\n/g,'<br>')}</p>
+    <button class="btn" onclick="speak(document.getElementById('story').innerText)">🔊 הקרא/י לי</button>`;};
+async function genStory(i){const learned=WORDS.filter(w=>pget(w.id).seen).map(w=>w.word).slice(0,25);const weak=weakWords().map(w=>w.word).slice(0,8);
+  const p=S.profile;const c=charById[S.chars.sel]||CHARS[0];
+  const prompt=`Write a short cheerful adventure story (6-8 simple Grade-5 sentences) for a 10-year-old Israeli girl named ${p.name} who loves ${p.interest}. Her hero companion is ${c.name}. Naturally include several of these English words: ${learned.concat(weak).join(', ')}. Encouraging and fun. Return only the story.`;
+  const out=await callAI(prompt);if(out)return out;
+  const w=learned.length?learned:['adventure','strong','win'];const pk=()=>w[Math.random()*w.length|0];
+  return `${p.name} and ${c.name} began a new quest. They had to ${pk()} and ${pk()} to save the world of words. On the way they saw a ${pk()} and a ${pk()}. "We can do it!" said ${c.name}. ${p.name} was brave and did not stop. Together they found the lost words and won! 🌟\n\n(סיפור זמני ללא אינטרנט — חברו מפתח AI בהגדרות לסיפור אישי מלא.)`;}
+async function callAI(prompt){const s=S.settings;if(s.aiProvider==='off'||!s.aiKey)return null;
+  try{if(s.aiProvider==='openai'){const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.aiKey},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:400})});const j=await r.json();return j.choices&&j.choices[0]&&j.choices[0].message.content.trim();}
+    else if(s.aiProvider==='anthropic'){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':s.aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-3-5-haiku-latest',max_tokens:400,messages:[{role:'user',content:prompt}]})});const j=await r.json();return j.content&&j.content[0]&&j.content[0].text.trim();}
+  }catch(e){return null;}return null;}
+
+/* ---------- Settings ---------- */
+function screenSettings(){sfx('click');const s=S.settings;
+  show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
+   <div class="panel"><h2>⚙️ הגדרות</h2>
+    <label>אפקטי קול</label><select id="s-sfx"><option value="1" ${s.sfx?'selected':''}>מופעל 🔊</option><option value="0" ${!s.sfx?'selected':''}>כבוי 🔇</option></select>
+    <label>הקראת מילים באנגלית</label><select id="s-sp"><option value="1" ${s.speech?'selected':''}>מופעל 🗣️</option><option value="0" ${!s.speech?'selected':''}>כבוי</option></select>
+    <label>ספק AI לסיפורים (אופציונלי)</label><select id="s-prov"><option value="off" ${s.aiProvider==='off'?'selected':''}>ללא (תבניות)</option><option value="openai" ${s.aiProvider==='openai'?'selected':''}>OpenAI</option><option value="anthropic" ${s.aiProvider==='anthropic'?'selected':''}>Anthropic</option></select>
+    <label>מפתח API (נשמר רק במכשיר)</label><input id="s-key" value="${s.aiKey?'••••••••':''}" placeholder="sk-..." autocomplete="off">
+    <small class="hint">המפתח נשמר מקומית בלבד.</small><div style="height:12px"></div>
+    <button class="btn" onclick="saveSettings()">שמירה 💾</button>
+   </div></div>`);}
+window.saveSettings=function(){S.settings.sfx=$('#s-sfx').value==='1';S.settings.speech=$('#s-sp').value==='1';S.settings.aiProvider=$('#s-prov').value;
+  const k=$('#s-key').value;if(k&&k!=='••••••••')S.settings.aiKey=k.trim();save();sfx('correct');screenHome();};
+
+/* ---------- Parent dashboard ---------- */
+window.parentGate=function(){sfx('click');
+  show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
+   <div class="panel center"><h2>👨‍👩‍👧 לוח הורים</h2><p class="muted">הזן/י קוד הורים</p>
+    <input id="pin" inputmode="numeric" maxlength="4" style="text-align:center;font-size:1.6rem;letter-spacing:8px" placeholder="••••">
+    <div style="height:12px"></div><button class="btn" onclick="checkPin()">כניסה</button><p id="pmsg" style="color:var(--bad)"></p></div></div>`);
+  setTimeout(()=>{const p=el('pin');if(p)p.focus();},200);};
+window.checkPin=function(){if($('#pin').value===S.profile.pin)screenParent();else $('#pmsg').textContent='קוד שגוי';};
+function unitTheme(u){return {1:'משפחה · ביגוד · זמן',2:'גוף · קמפינג · כיוונים',3:'אוכל · ירקות · בית ספר',4:'אנשים · ספורט · אמנות',5:'בית · מוזיקה · לוח שנה'}[u]||('יחידה '+u);}
+function screenParent(){
+  const total=WORDS.length, mastered=masteredCount();
+  const seen=WORDS.filter(w=>pget(w.id).seen).length;
+  const learning=WORDS.filter(w=>{const p=pget(w.id);return p.seen&&p.m<4;}).length;
+  const acc=S.stats.total?Math.round(S.stats.correct/S.stats.total*100):0;
+  const weak=weakWords();
+  const units={};WORDS.forEach(w=>{const u=units[w.unit]=units[w.unit]||{t:0,m:0};u.t++;if(pget(w.id).m>=4)u.m++;});
+  const unitRows=Object.keys(units).sort().map(u=>{const v=units[u];const pc=Math.round(v.m/v.t*100);
+    return `<div style="margin:10px 0"><div style="display:flex;justify-content:space-between;gap:8px"><span>יחידה ${u} <small class="muted">${unitTheme(+u)}</small></span><span class="muted">${v.m}/${v.t}</span></div><div class="bar"><i style="width:${pc}%"></i></div></div>`;}).join('');
+  const cats={};WORDS.forEach(w=>{cats[w.category]=cats[w.category]||{t:0,m:0};cats[w.category].t++;if(pget(w.id).m>=4)cats[w.category].m++;});
+  const catRows=Object.entries(cats).sort((a,b)=>(b[1].m/b[1].t)-(a[1].m/a[1].t)).map(([c,v])=>{const p=Math.round(v.m/v.t*100);
+    return `<div style="margin:8px 0"><div style="display:flex;justify-content:space-between"><span>${catHe(c)}</span><span class="muted">${v.m}/${v.t}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`;}).join('');
+  let lastPlayed='עדיין לא שיחקה';try{if(S.stats.lastDay)lastPlayed=new Date(S.stats.lastDay).toLocaleDateString('he-IL');}catch(e){}
+  let rec;
+  if(seen===0)rec='יערה עוד לא התחילה. קרב אחד היום יתחיל את הרצף 🚀';
+  else if(weak.length>=8)rec=`יש ${weak.length} מילים שמאתגרות אותה — המשחק כבר מגיש אותן יותר. שווה גם סבב "תרגול".`;
+  else if(acc>=85)rec='דיוק גבוה מאוד — היא מוכנה למילים חדשות, שנפתחות אוטומטית.';
+  else if(S.stats.streak===0)rec='כדאי לשמור על רצף יומי — אפילו קרב אחד ביום עושה הבדל.';
+  else rec='התקדמות יפה ויציבה — כדאי להמשיך באותו קצב 🌟';
+  const summary=`${S.profile.name} שיחקה ${S.stats.minutes} דק׳ בסה״כ, שולטת ב-${mastered} מילים, לומדת כרגע ${learning}, ומתקשה ב-${weak.length}. רצף נוכחי: ${S.stats.streak} ימים.`;
+  show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
+   <div class="panel"><h2>📊 תמונת מצב — ${S.profile.name}</h2><p style="font-size:1.05rem;line-height:1.7">${summary}</p></div>
+   <div class="panel"><div class="cgrid"><div class="stat"><b>${S.stats.streak}</b>רצף 🔥</div><div class="stat"><b>${S.stats.minutes}</b>דקות ⏱️</div><div class="stat"><b>${mastered}</b>נשלטו ✅</div>
+      <div class="stat"><b>${acc}%</b>דיוק 🎯</div><div class="stat"><b>${S.stats.wins}</b>נצחונות ⚔️</div><div class="stat"><b>${S.stats.bestCombo}</b>קומבו שיא 🔥</div></div></div>
+   <div class="panel"><h3>שליטה כללית</h3><div class="bar"><i style="width:${Math.round(mastered/total*100)}%"></i></div>
+     <p class="muted">${mastered} נשלטו · ${learning} בלמידה · ${total-seen} טרם התחילה · מתוך ${total}</p></div>
+   <div class="panel" style="border-color:var(--gold)"><h3>💡 המלצה</h3><p>${rec}</p></div>
+   <div class="panel"><h3>מילים לחיזוק 🔴 <small class="muted">(מוגשות לה יותר)</small></h3>
+     ${weak.length?weak.slice(0,20).map(w=>`<span class="tag weak">${w.word} · ${w.hebrew}</span>`).join(''):'<p class="muted">אין כרגע — מצוין!</p>'}</div>
+   <div class="panel"><h3>התקדמות לפי יחידה 📚</h3>${unitRows}</div>
+   <div class="panel"><h3>התקדמות לפי נושא</h3>${catRows}</div>
+   <div class="panel"><h3>פעילות</h3><p class="muted">שיחקה לאחרונה: ${lastPlayed} · ימי רצף: ${S.stats.streak} · סה״כ זמן: ${S.stats.minutes} דק׳</p></div>
+   <div class="panel"><button class="btn ghost" onclick="if(confirm('לאפס את כל ההתקדמות?')){localStorage.removeItem(KEY);location.reload();}">איפוס נתונים</button></div>
+  </div>`);}
+function catHe(c){return {general:'כללי',verbs:'פעלים',adjectives:'שמות תואר',family:'משפחה',clothes:'ביגוד',time:'זמן','times-of-day':'שעות היום',body:'גוף',camping:'קמפינג',directions:'הכוונה',food:'אוכל',vegetables:'ירקות',people:'אנשים',olympics:'אולימפיאדה',art:'אומנות',home:'בית',music:'מוזיקה',calendar:'לוח שנה',numbers:'מספרים',trips:'טיולים',phrases:'ביטויים'}[c]||c;}
+
+/* expose + boot */
+window.screenHome=screenHome;window.screenChars=screenChars;window.screenRoad=screenRoad;window.screenPractice=screenPractice;window.screenSettings=screenSettings;window.speak=speak;window.KEY=KEY;
+(function boot(){if(!WORDS.length){app.innerHTML='<div class="panel">שגיאה: קובץ המילים לא נטען.</div>';return;}
+  if(!S.profile)screenOnboard();else screenHome();})();
+</script>
+</body>
+</html>
