@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#0b0e2a">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Word Brawl ⚔️</title>
 <style>
@@ -139,7 +141,7 @@ const el=id=>document.getElementById(id);
 const $=(s,r=document)=>r.querySelector(s);
 const app=el('app');
 const DAY=86400000, now=()=>Date.now();
-const APP_VER='v7';
+const APP_VER='v8';
 const WORDS=(window.VOCAB&&window.VOCAB.words)||[];
 const byId=Object.fromEntries(WORDS.map(w=>[w.id,w]));
 
@@ -372,7 +374,7 @@ function typesFor(w){const t=['match','reverse','listen'];
   if(fillFor(w))t.push('fillblank');
   if(!w.word.includes(' ')&&w.word.length<=10)t.push('scramble');
   return t;}   /* free-text 'spell' removed — building from letters (scramble) instead */
-function optRow(opts,key,wid){return opts.map(o=>`<button class="opt" data-id="${o.id}" onclick="battleAns(this,'${o.id}','${wid}')">${o[key]}</button>`).join('');}
+function optRow(opts,key,wid){const dir=key==='word'?' style="direction:ltr"':'';return opts.map(o=>`<button class="opt"${dir} data-id="${o.id}" onclick="battleAns(this,'${o.id}','${wid}')">${o[key]}</button>`).join('');}
 function arena(w,body,dur,after){
   const c=charById[S.chars.sel]||CHARS[0];
   const hearts='❤️'.repeat(BT.hearts)+'🖤'.repeat(3-BT.hearts);
@@ -689,6 +691,17 @@ window.screenHome=screenHome;window.screenChars=screenChars;window.screenRoad=sc
 (function boot(){if(!WORDS.length){app.innerHTML='<div class="panel">שגיאה: קובץ המילים לא נטען.</div>';return;}
   const hb=el('homebtn');if(hb&&S.profile)hb.classList.add('show');
   if(!S.profile)screenOnboard();else screenHome();})();
+/* auto-update: if a newer version is deployed, load it automatically (beats browser cache) */
+(function checkForUpdate(){
+  try{
+    if(location.protocol==='file:')return;
+    if(/[?&]ver=/.test(location.search))return;            // already reloaded to a specific version
+    fetch(location.pathname+'?cb='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(html=>{
+      const m=html.match(/APP_VER=['"](v\d+)['"]/);
+      if(m&&m[1]!==APP_VER){location.replace(location.pathname+'?ver='+m[1]);}
+    }).catch(()=>{});
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
