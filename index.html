@@ -141,7 +141,7 @@ const el=id=>document.getElementById(id);
 const $=(s,r=document)=>r.querySelector(s);
 const app=el('app');
 const DAY=86400000, now=()=>Date.now();
-const APP_VER='v8';
+const APP_VER='v9';
 const WORDS=(window.VOCAB&&window.VOCAB.words)||[];
 const byId=Object.fromEntries(WORDS.map(w=>[w.id,w]));
 
@@ -193,18 +193,19 @@ function weakWords(){return WORDS.filter(w=>{const p=pget(w.id);return p.seen&&p
 function dueWords(){return WORDS.filter(w=>{const p=pget(w.id);return p.seen&&p.next<=now()&&p.m<5;});}
 function newWords(cap){return WORDS.filter(w=>!pget(w.id).seen&&(!cap||w.unit<=cap));}
 function pickDaily(n=14){
-  // Priority: words she STRUGGLES with come back most, then scheduled reviews, then new words.
-  const cap=Math.min(5,1+Math.floor(masteredCount()/40));
-  const weak=shuffle(weakWords());          // seen & low mastery -> reinforce hardest
+  // Balance VARIETY with reinforcement: keep it fresh every battle, but still bring back weak words.
+  const cap=Math.min(5,2+Math.floor(masteredCount()/25));   // more units available sooner = bigger pool
+  const weak=shuffle(weakWords());          // seen & low mastery -> reinforce (rotated, ~30%)
   const due=shuffle(dueWords());            // spaced-repetition schedule
-  const fresh=shuffle(newWords(cap));       // gradually introduce new words
+  const fresh=shuffle(newWords(cap));       // brand-new words
+  const pool=shuffle(WORDS.filter(w=>w.unit<=cap && pget(w.id).m<5)); // whole unlocked pool for variety
   const set=[];
   const add=arr=>{for(const w of arr){if(set.length>=n)break;if(!set.includes(w))set.push(w);}};
-  add(weak.slice(0,Math.ceil(n*0.5)));      // up to ~50% of the round = struggling words
+  add(weak.slice(0,Math.ceil(n*0.3)));      // ~30% struggling words (still a big boost, but rotated)
+  add(fresh.slice(0,Math.ceil(n*0.4)));     // ~40% new words for freshness
   add(due);
-  add(fresh);
-  add(shuffle(WORDS.filter(w=>pget(w.id).m<4)));   // backfill: anything not yet mastered
-  add(shuffle(WORDS));                             // last resort
+  add(pool);                                // fill the rest from the whole unlocked vocabulary (varied)
+  add(shuffle(WORDS));                      // last resort
   return shuffle(set).slice(0,n);
 }
 
@@ -386,8 +387,6 @@ function arena(w,body,dur,after){
     </div>
     <div class="center"><div class="combo" id="combo">${BT.combo>1?'🔥 קומבו x'+BT.combo:''}</div></div>
     <div class="panel center" id="gbody">${body}
-      <div id="hintbox"></div>
-      <button class="btn ghost" style="width:auto;padding:9px 16px;margin-top:10px;font-size:.95rem" onclick="hint()">💡 רמז — לא מכירה את המילה?</button>
       <div class="bar timebar" style="margin-top:14px"><i id="tbar" style="width:100%"></i></div></div>
     <div class="center" style="margin-top:8px"><span class="chip">${c.emoji} ${c.name}</span> <span class="hearts">${hearts}</span></div>
   </div>`);
@@ -418,7 +417,7 @@ function battleRound(){
   else if(type==='fillblank'){const o=distractors(w,'word');
     const re=new RegExp('\\b'+w.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
     const blanked=fillFor(w).replace(re,'<span style="color:var(--gold)">＿＿＿</span>');
-    arena(w,`<div style="direction:ltr;text-align:center;font-size:1.35rem;line-height:1.7;font-weight:700">${blanked}</div><div class="muted">איזו מילה משלימה את המשפט?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,17000);}
+    arena(w,`<div dir="ltr" style="direction:ltr;unicode-bidi:isolate;text-align:center;font-size:1.35rem;line-height:1.7;font-weight:700">${blanked}</div><div class="muted">איזו מילה משלימה את המשפט?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,17000);}
   else if(type==='scramble'){const letters=shuffle(w.word.toLowerCase().split(''));
     arena(w,`<div class="muted">${w.hebrew} — סדר/י את המילה</div><button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button>
       <div class="slot" id="bslot"></div><div class="tiles" id="btiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="bAddL(this)">${l}</button>`).join('')}</div>`,22000);
