@@ -106,6 +106,10 @@ label{font-weight:700;display:block;margin:14px 0 6px}
 a.link{color:var(--neon);text-decoration:underline;cursor:pointer}
 small.hint{color:var(--muted)}
 .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:60}
+.badge{position:absolute;top:-9px;right:-9px;min-width:26px;height:26px;padding:0 6px;display:inline-flex;
+  align-items:center;justify-content:center;background:#ff2e50;color:#fff;border-radius:999px;font-size:.85rem;
+  font-weight:900;box-shadow:0 0 10px rgba(255,46,80,.8);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.15)}}
 .homebtn{position:fixed;bottom:16px;left:16px;z-index:70;width:56px;height:56px;border-radius:50%;
   font-size:26px;background:linear-gradient(135deg,var(--neon),#2b8bff);color:#04122b;
   box-shadow:0 4px 0 #0a63b8,0 6px 16px rgba(0,229,255,.4);display:none}
@@ -135,7 +139,7 @@ const el=id=>document.getElementById(id);
 const $=(s,r=document)=>r.querySelector(s);
 const app=el('app');
 const DAY=86400000, now=()=>Date.now();
-const APP_VER='v6';
+const APP_VER='v7';
 const WORDS=(window.VOCAB&&window.VOCAB.words)||[];
 const byId=Object.fromEntries(WORDS.map(w=>[w.id,w]));
 
@@ -225,7 +229,7 @@ function speak(t){
   if(!S.settings.speech||!window.speechSynthesis)return;
   try{
     const u=new SpeechSynthesisUtterance(String(t));
-    u.lang='en-US';u.rate=.85;u.pitch=1.05;   // slower & warmer = clearer, less robotic
+    u.lang='en-US';u.rate=.8;u.pitch=1.05;   // slower & warmer = clearer, less robotic
     const v=pickVoice();if(v)u.voice=v;
     if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();
     speechSynthesis.resume();
@@ -284,6 +288,8 @@ window.goHome=function(){if(BT&&BT.active){if(!confirm('לצאת מהקרב ול
 /* Home / Arena hub */
 function screenHome(){checkStreak();const c=charById[S.chars.sel]||CHARS[0];
   const xpInLvl=S.stats.xp%100;
+  const roadClaim=ROAD.filter((m,i)=>S.stats.trophies>=m.t&&!S.claimed.includes(i)).length;
+  const roadBadge=roadClaim>0?`<span class="badge">${roadClaim}</span>`:'';
   show(`<div class="screen active">
     <div class="chips">
       <span class="chip">🏆 ${S.stats.trophies}</span>
@@ -301,7 +307,7 @@ function screenHome(){checkStreak();const c=charById[S.chars.sel]||CHARS[0];
     <button class="btn mega" onclick="startBattle()">⚔️ קרב מילים!</button>
     <div class="row" style="margin-top:12px">
       <button class="btn ghost" onclick="screenChars()">🦸 דמויות</button>
-      <button class="btn ghost" onclick="screenRoad()">🏆 מסלול גביעים</button>
+      <button class="btn ghost" style="position:relative" onclick="screenRoad()">🏆 מסלול גביעים${roadBadge}</button>
     </div>
     <div class="row">
       <button class="btn ghost" onclick="screenPractice()">🎮 תרגול</button>
@@ -410,7 +416,7 @@ function battleRound(){
   else if(type==='fillblank'){const o=distractors(w,'word');
     const re=new RegExp('\\b'+w.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
     const blanked=fillFor(w).replace(re,'<span style="color:var(--gold)">＿＿＿</span>');
-    arena(w,`<div style="font-size:1.35rem;line-height:1.7;font-weight:700">${blanked}</div><div class="muted">איזו מילה משלימה את המשפט?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,17000);}
+    arena(w,`<div style="direction:ltr;text-align:center;font-size:1.35rem;line-height:1.7;font-weight:700">${blanked}</div><div class="muted">איזו מילה משלימה את המשפט?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,17000);}
   else if(type==='scramble'){const letters=shuffle(w.word.toLowerCase().split(''));
     arena(w,`<div class="muted">${w.hebrew} — סדר/י את המילה</div><button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button>
       <div class="slot" id="bslot"></div><div class="tiles" id="btiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="bAddL(this)">${l}</button>`).join('')}</div>`,22000);
