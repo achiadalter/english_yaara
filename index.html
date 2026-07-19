@@ -141,7 +141,7 @@ const el=id=>document.getElementById(id);
 const $=(s,r=document)=>r.querySelector(s);
 const app=el('app');
 const DAY=86400000, now=()=>Date.now();
-const APP_VER='v9';
+const APP_VER='v10';
 const WORDS=(window.VOCAB&&window.VOCAB.words)||[];
 const byId=Object.fromEntries(WORDS.map(w=>[w.id,w]));
 
@@ -420,7 +420,7 @@ function battleRound(){
     arena(w,`<div dir="ltr" style="direction:ltr;unicode-bidi:isolate;text-align:center;font-size:1.35rem;line-height:1.7;font-weight:700">${blanked}</div><div class="muted">איזו מילה משלימה את המשפט?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,17000);}
   else if(type==='scramble'){const letters=shuffle(w.word.toLowerCase().split(''));
     arena(w,`<div class="muted">${w.hebrew} — סדר/י את המילה</div><button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button>
-      <div class="slot" id="bslot"></div><div class="tiles" id="btiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="bAddL(this)">${l}</button>`).join('')}</div>`,22000);
+      <div class="slot" id="bslot" dir="ltr" style="direction:ltr"></div><div class="tiles" id="btiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="bAddL(this)">${l}</button>`).join('')}</div>`,22000);
     window._bcur='';window._btar=w.word.toLowerCase();window._bwid=w.id;}
   else if(type==='spell'){
     arena(w,`<div class="muted">${w.hebrew} — כתבו באנגלית</div><button class="btn" style="width:auto;padding:12px 22px;margin:4px auto" onclick="window._spk('${esc(w.word)}')">🔊 שמע/י</button>
@@ -554,7 +554,7 @@ function practiceWrap(inner,title){show(`<div class="screen active"><div class="
 window.soloScramble=function(){const qs=shuffle(pickDaily(14).filter(w=>!w.word.includes(' ')&&w.word.length<=9)).slice(0,6);let q=0;
   function ask(){if(q>=qs.length)return screenPractice();const w=qs[q];const letters=shuffle(w.word.toLowerCase().split(''));
     practiceWrap(`<p class="muted">${w.hebrew}</p><button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button>
-      <div class="slot" id="slot"></div><div class="tiles" id="tiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="addL(this)">${l}</button>`).join('')}</div>
+      <div class="slot" id="slot" dir="ltr" style="direction:ltr"></div><div class="tiles" id="tiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="addL(this)">${l}</button>`).join('')}</div>
       <button class="btn ghost" style="width:auto;padding:10px 18px" onclick="clrL()">↺ נקה</button>`,'סידור אותיות 🔀');
     window._cur='';window._t=w.word.toLowerCase();window._tw=w.id;}
   window.addL=function(b){b.style.visibility='hidden';window._cur+=b.dataset.l;const s=el('slot');const c=document.createElement('span');c.className='slotchip';c.textContent=b.dataset.l;s.appendChild(c);sfx('click');
@@ -589,29 +589,61 @@ window.soloMemory=function(){const picks=shuffle(pickDaily(10)).slice(0,5);let c
 window.openStory=async function(){sfx('click');
   show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
    <div class="panel"><h2>📖 הסיפור שלך</h2><div id="story"><p class="muted">כותב/ת לך סיפור…</p></div></div></div>`);
-  const idx=Math.min(Math.floor(masteredCount()/25),5);let text=S.story.texts[idx];
-  if(!text){text=await genStory(idx);S.story.texts[idx]=text;save();}
-  el('story').innerHTML=`<p style="direction:ltr;text-align:right;font-size:1.12rem;line-height:1.9">${text.replace(/\n/g,'<br>')}</p>
-    <button class="btn" onclick="speak(document.getElementById('story').innerText)">🔊 הקרא/י לי</button>`;};
-/* coherent, on-theme offline stories (used when there is no AI key) */
+  const idx=Math.min(Math.floor(masteredCount()/25),5);
+  const text=await genStory(idx);   // always fresh — no stale cache, so content changes each time
+  el('story').innerHTML=`<p dir="ltr" style="direction:ltr;text-align:left;font-size:1.12rem;line-height:1.9">${text.replace(/\n/g,'<br>')}</p>
+    <button class="btn" style="margin-top:10px" onclick="speak(document.getElementById('story').innerText)">🔊 הקרא/י לי</button>
+    <div style="height:8px"></div><button class="btn ghost" onclick="openStory()">📖 סיפור חדש</button>`;};
+/* coherent, on-theme offline stories (2 variants each — picked at random so the story changes) */
 const STORIES={
- 'בעלי חיים':(n,b)=>`One sunny morning, ${n} and ${b} walked into a green forest to help the lost animals. A little fox was hungry, so ${n} gave it some food. A small bird had a hurt wing, and ${b} kept it warm and safe. Together they helped every animal, big and small, find the way home. The happy animals said thank you, and ${n} smiled all the way home. 🐾`,
- 'כדורגל':(n,b)=>`Today was the big game, and ${n} was ready to play. Her team needed one more goal to win. ${b} cheered loudly from the side of the field. ${n} ran fast, kicked the ball hard, and scored! Everyone jumped and shouted with joy. It was the best game ever, and ${n} felt like a real champion. ⚽`,
- 'ציור ואומנות':(n,b)=>`${n} loved to paint more than anything. One day she found a magic paintbrush with ${b}. Every color she painted came to life on the paper! She painted a blue sea, a warm sun, and a red flower. ${b} said her art was the most beautiful in the world. ${n} was proud and could not stop smiling. 🎨`,
- 'חלל וכוכבים':(n,b)=>`${n} and ${b} flew into space in a shiny rocket. They wanted to visit the moon and count the bright stars. Far away, they saw a planet no one had ever seen before. ${n} was brave and was not afraid of the dark sky. They found a new star and gave it a name. What an amazing trip it was! 🚀`,
- 'נסיכות ואגדות':(n,b)=>`Long ago, a kind princess named ${n} lived in a tall castle. Her friend ${b} told her that a dragon had taken the golden key. ${n} was brave and went on a long journey to find it. She crossed a river and walked through a dark forest. In the end, she found the key and saved her kingdom. Everyone cheered, and ${n} was a hero. 👑`,
- 'דינוזאורים':(n,b)=>`${n} and ${b} traveled back in time to the land of the dinosaurs. They saw a huge dinosaur eating green leaves near a river. A baby dinosaur was lost and could not find its mother. ${n} was kind and helped the baby get back home. The big dinosaurs said thank you with a happy roar. It was the best adventure ${n} ever had! 🦕`,
- 'מוזיקה':(n,b)=>`${n} loved music and wanted to play in a big show. With her friend ${b}, she practiced every single day. She played the guitar while ${b} sang a happy song. When the show began, everyone listened and started to dance. ${n} was not afraid, and she played beautifully. The crowd cheered, and ${n} felt like a star. 🎵`,
- 'ספורט':(n,b)=>`${n} woke up early to train for the big race. Her friend ${b} ran next to her every morning. She was strong and never gave up, even when it was hard. On race day, ${n} ran as fast as she could. She crossed the finish line and won a shiny medal! ${n} was so proud of herself. 🏅`,
- 'בישול':(n,b)=>`${n} put on her apron and started to cook in the kitchen. Her friend ${b} helped her mix the eggs and the sugar. They followed the recipe step by step to make a sweet cake. Soon the kitchen smelled wonderful, and the cake was ready. ${n} shared it with her family, and everyone loved it. Cooking with ${b} was so much fun! 🍰`,
- 'משחקי מחשב':(n,b)=>`${n} and ${b} jumped into a magical video game world. They had to solve fun puzzles and find the hidden treasure. Every level was harder, but ${n} never gave up. She was quick and clever, and she found the secret door. At the last level, they won the golden crown! It was the coolest game ${n} ever played. 🎮`
+ 'בעלי חיים':[
+  (n,b)=>`One sunny morning, ${n} and ${b} walked into a green forest to help the lost animals. A little fox was hungry, so ${n} gave it some food. A small bird had a hurt wing, and ${b} kept it warm and safe. Together they helped every animal find the way home. The happy animals said thank you, and ${n} smiled all the way home. 🐾`,
+  (n,b)=>`${n} and ${b} found a tiny kitten stuck high up in a tall tree. ${n} was very brave and climbed up slowly to reach it. She held the kitten close and came back down safely. ${b} gave the little kitten some warm milk. The kitten purred and followed them all day long. ${n} was so happy that she had helped a new friend. 🐱`
+ ],
+ 'כדורגל':[
+  (n,b)=>`Today was the big game, and ${n} was ready to play. Her team needed one more goal to win. ${b} cheered loudly from the side of the field. ${n} ran fast, kicked the ball hard, and scored! Everyone jumped and shouted with joy. It was the best game ever, and ${n} felt like a real champion. ⚽`,
+  (n,b)=>`The score was tied, and only one minute was left. ${n} passed the ball to her best friend on the team. Then she ran toward the goal as fast as the wind. Her friend passed it back, and ${n} scored the winning goal! ${b} and the whole team cheered for her. It was a day ${n} would never forget. ⚽`
+ ],
+ 'ציור ואומנות':[
+  (n,b)=>`${n} loved to paint more than anything. One day she found a magic paintbrush with ${b}. Every color she painted came to life on the paper! She painted a blue sea, a warm sun, and a red flower. ${b} said her art was the most beautiful in the world. ${n} was proud and could not stop smiling. 🎨`,
+  (n,b)=>`${n} wanted to paint a special picture for her mom. She and ${b} mixed red, blue, and yellow paint together. She drew a big house, a bright sun, and a green tree. It was the best painting she had ever made. Her mom put it on the wall for everyone to see. ${n} felt proud and very happy. 🖼️`
+ ],
+ 'חלל וכוכבים':[
+  (n,b)=>`${n} and ${b} flew into space in a shiny rocket. They wanted to visit the moon and count the bright stars. Far away, they saw a planet no one had ever seen before. ${n} was brave and was not afraid of the dark sky. They found a new star and gave it a name. What an amazing trip it was! 🚀`,
+  (n,b)=>`${n} and ${b} put on their space suits and flew to the moon. They jumped high and floated in the air like feathers. They saw the Earth, small and blue, far below them. ${n} planted a little flag on the moon. Then they flew back home just before dinner time. It was the best trip in the whole universe! 🌙`
+ ],
+ 'נסיכות ואגדות':[
+  (n,b)=>`Long ago, a kind princess named ${n} lived in a tall castle. Her friend ${b} told her that a dragon had taken the golden key. ${n} was brave and went on a long journey to find it. She crossed a river and walked through a dark forest. In the end, she found the key and saved her kingdom. Everyone cheered, and ${n} was a hero. 👑`,
+  (n,b)=>`Princess ${n} heard a cry for help from the dark woods. She and ${b} took a lamp and went to look. They found a baby dragon that was lost and scared. ${n} was kind and led it back to its family. The dragons thanked her with a warm, happy fire. ${n} returned to the castle a true hero. 🐉`
+ ],
+ 'דינוזאורים':[
+  (n,b)=>`${n} and ${b} traveled back in time to the land of the dinosaurs. They saw a huge dinosaur eating green leaves near a river. A baby dinosaur was lost and could not find its mother. ${n} was kind and helped the baby get back home. The big dinosaurs said thank you with a happy roar. It was the best adventure ${n} ever had! 🦕`,
+  (n,b)=>`${n} and ${b} found a giant dinosaur egg near the river. They kept it warm until a baby dinosaur came out. The little dinosaur thought that ${n} was its mom! ${n} taught it how to find leaves to eat. When its real family came back, they said thank you. ${n} waved goodbye to her big new friend. 🦖`
+ ],
+ 'מוזיקה':[
+  (n,b)=>`${n} loved music and wanted to play in a big show. With her friend ${b}, she practiced every single day. She played the guitar while ${b} sang a happy song. When the show began, everyone listened and started to dance. ${n} was not afraid, and she played beautifully. The crowd cheered, and ${n} felt like a star. 🎵`,
+  (n,b)=>`${n} wrote a brand new song with her friend ${b}. She played the piano while ${b} kept the beat. At the school show, they were a little nervous at first. But when they started, the whole room began to sing along. Everyone clapped for a long, long time. ${n} loved every second of it. 🎹`
+ ],
+ 'ספורט':[
+  (n,b)=>`${n} woke up early to train for the big race. Her friend ${b} ran next to her every morning. She was strong and never gave up, even when it was hard. On race day, ${n} ran as fast as she could. She crossed the finish line and won a shiny medal! ${n} was so proud of herself. 🏅`,
+  (n,b)=>`${n} joined a big swimming race at the pool. She had trained hard with ${b} all summer long. When the race started, she swam as fast as she could. In the last second, she touched the wall and won! ${b} jumped up and cheered for her. ${n} held her gold medal up high and smiled. 🏊`
+ ],
+ 'בישול':[
+  (n,b)=>`${n} put on her apron and started to cook in the kitchen. Her friend ${b} helped her mix the eggs and the sugar. They followed the recipe step by step to make a sweet cake. Soon the kitchen smelled wonderful, and the cake was ready. ${n} shared it with her family, and everyone loved it. Cooking with ${b} was so much fun! 🍰`,
+  (n,b)=>`${n} and ${b} made a pizza for the whole family. They rolled the dough and added cheese and red sauce. The hot oven made the kitchen smell amazing. When it was ready, everyone came running to the table. The pizza was warm, cheesy, and very tasty. ${n} was proud to be a real little chef! 🍕`
+ ],
+ 'משחקי מחשב':[
+  (n,b)=>`${n} and ${b} jumped into a magical video game world. They had to solve fun puzzles and find the hidden treasure. Every level was harder, but ${n} never gave up. She was quick and clever, and she found the secret door. At the last level, they won the golden crown! It was the coolest game ${n} ever played. 🎮`,
+  (n,b)=>`${n} and ${b} started a new game full of tricky levels. A funny robot gave them clues along the way. ${n} used her brain to solve every single puzzle. She jumped, she ran, and she never gave up once. At the end, they beat the final boss together! ${n} cheered — she was the game champion. 🏆`
+ ]
 };
 async function genStory(i){
   const p=S.profile;const c=charById[S.chars.sel]||CHARS[0];
   const learned=WORDS.filter(w=>pget(w.id).seen).map(w=>w.word).slice(0,20);
-  const prompt=`Write a short adventure story for a 10-year-old Israeli girl named ${p.name} who loves ${p.interest}. Her companion is ${c.name}. Use 6-8 SIMPLE, CLEAR Grade-5 English sentences. The story MUST make logical sense and flow naturally like a real story. You may gently reuse a few of these words she is learning, but ONLY where they fit naturally and grammatically: ${learned.join(', ')}. Warm and encouraging. Return only the story text.`;
+  const prompt=`Write a short adventure story for a 10-year-old Israeli girl named ${p.name} who loves ${p.interest}. Her companion is ${c.name}. Use 6-8 SIMPLE, CLEAR Grade-5 English sentences. The story MUST make logical sense and flow naturally like a real story. You may gently reuse a few of these words she is learning, but ONLY where they fit naturally and grammatically: ${learned.join(', ')}. Make it a NEW, different story each time. Warm and encouraging. Return only the story text.`;
   const out=await callAI(prompt);if(out)return out;
-  return (STORIES[p.interest]||STORIES['בעלי חיים'])(p.name,c.name);
+  const arr=STORIES[p.interest]||STORIES['בעלי חיים'];
+  return arr[Math.random()*arr.length|0](p.name,c.name);
 }
 async function callAI(prompt){const s=S.settings;if(s.aiProvider==='off'||!s.aiKey)return null;
   try{if(s.aiProvider==='openai'){const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.aiKey},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:400})});const j=await r.json();return j.choices&&j.choices[0]&&j.choices[0].message.content.trim();}
