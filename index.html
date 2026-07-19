@@ -141,7 +141,7 @@ const el=id=>document.getElementById(id);
 const $=(s,r=document)=>r.querySelector(s);
 const app=el('app');
 const DAY=86400000, now=()=>Date.now();
-const APP_VER='v10';
+const APP_VER='v11';
 const WORDS=(window.VOCAB&&window.VOCAB.words)||[];
 const byId=Object.fromEntries(WORDS.map(w=>[w.id,w]));
 
@@ -643,7 +643,10 @@ async function genStory(i){
   const prompt=`Write a short adventure story for a 10-year-old Israeli girl named ${p.name} who loves ${p.interest}. Her companion is ${c.name}. Use 6-8 SIMPLE, CLEAR Grade-5 English sentences. The story MUST make logical sense and flow naturally like a real story. You may gently reuse a few of these words she is learning, but ONLY where they fit naturally and grammatically: ${learned.join(', ')}. Make it a NEW, different story each time. Warm and encouraging. Return only the story text.`;
   const out=await callAI(prompt);if(out)return out;
   const arr=STORIES[p.interest]||STORIES['בעלי חיים'];
-  return arr[Math.random()*arr.length|0](p.name,c.name);
+  let idx=Math.random()*arr.length|0;
+  if(arr.length>1&&idx===window._lastStoryIdx)idx=(idx+1)%arr.length;  // never repeat the previous story
+  window._lastStoryIdx=idx;
+  return arr[idx](p.name,c.name);
 }
 async function callAI(prompt){const s=S.settings;if(s.aiProvider==='off'||!s.aiKey)return null;
   try{if(s.aiProvider==='openai'){const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.aiKey},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:400})});const j=await r.json();return j.choices&&j.choices[0]&&j.choices[0].message.content.trim();}
