@@ -141,7 +141,7 @@ const el=id=>document.getElementById(id);
 const $=(s,r=document)=>r.querySelector(s);
 const app=el('app');
 const DAY=86400000, now=()=>Date.now();
-const APP_VER='v11';
+const APP_VER='v13';
 const WORDS=(window.VOCAB&&window.VOCAB.words)||[];
 const byId=Object.fromEntries(WORDS.map(w=>[w.id,w]));
 
@@ -269,7 +269,10 @@ function lvl(){return 1+Math.floor(S.stats.xp/100);}
 
 /* ---------- distractors ---------- */
 function distractors(correct,keyName,n=3){const cval=correct[keyName];const seen=new Set([cval]);const out=[];
-  for(const w of shuffle(WORDS)){if(w.id===correct.id||seen.has(w[keyName]))continue;seen.add(w[keyName]);out.push(w);if(out.length>=n)break;}
+  for(const w of shuffle(WORDS)){
+    if(w.id===correct.id||seen.has(w[keyName]))continue;
+    if(w.hebrew===correct.hebrew||w.word===correct.word)continue;   // avoid synonyms/homographs = two "correct" answers
+    seen.add(w[keyName]);out.push(w);if(out.length>=n)break;}
   return shuffle([correct,...out]);}
 
 /* ============================ SCREENS ============================ */
@@ -331,7 +334,7 @@ function emojiFor(w){return EMOJI[w.word]||EMOJI[w.word.toLowerCase()]||null;}
 const SENT={
  drive:"My dad can drive a car.",laugh:"The funny clown made us laugh.",speak:"I can speak two languages.",
  cook:"My mom likes to cook dinner.",kick:"You kick the ball with your foot.",throw:"Please throw the ball to me.",
- give:"Please give me the book.",teach:"My teacher will teach us English.",study:"I study for my test every night.",
+ give:"Please give me the book.",teach:"Please teach me how to swim.",study:"I study for my test every night.",
  sell:"They sell fruit at the market.",build:"We will build a big sandcastle.",paint:"The artist likes to paint pictures.",
  wash:"Wash your hands before you eat.",hear:"I can hear the music.",catch:"Try to catch the ball!",
  push:"Push the door to open it.",hold:"Please hold my hand.",choose:"You can choose any color you like.",
@@ -373,8 +376,7 @@ function stopTimer(){if(BT&&BT.timer){clearInterval(BT.timer);BT.timer=null;}}
 function typesFor(w){const t=['match','reverse','listen'];
   if(emojiFor(w))t.push('emoji');
   if(fillFor(w))t.push('fillblank');
-  if(!w.word.includes(' ')&&w.word.length<=10)t.push('scramble');
-  return t;}   /* free-text 'spell' removed — building from letters (scramble) instead */
+  return t;}   /* word-building (scramble) and free-text (spell) rounds removed */
 function optRow(opts,key,wid){const dir=key==='word'?' style="direction:ltr"':'';return opts.map(o=>`<button class="opt"${dir} data-id="${o.id}" onclick="battleAns(this,'${o.id}','${wid}')">${o[key]}</button>`).join('');}
 function arena(w,body,dur,after){
   const c=charById[S.chars.sel]||CHARS[0];
@@ -401,18 +403,21 @@ function arena(w,body,dur,after){
   if(after)after();
 }
 function battleRound(){
+  if(!BT||!BT.active)return;   // bail if the player left the battle (prevents stray re-render)
   if(BT.hp<=0)return battleWin();
   if(BT.hearts<=0)return battleLose();
   const w=BT.words[BT.i%BT.words.length];BT.i++;BT.answered=false;
   let types=typesFor(w).filter(x=>x!==lastType);if(!types.length)types=typesFor(w);
   const type=types[Math.random()*types.length|0];lastType=type;
   if(type==='match'){const o=distractors(w,'hebrew');
-    arena(w,`<button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button><div class="qword">${w.word}</div><div class="muted">מה הפירוש?</div><div class="opts">${optRow(o,'hebrew',w.id)}</div>`,14000,()=>speak(w.word));}
+    arena(w,`<button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button><div class="qword" dir="ltr" style="direction:ltr;unicode-bidi:isolate">${w.word}</div><div class="muted">מה הפירוש?</div><div class="opts">${optRow(o,'hebrew',w.id)}</div>`,14000,()=>speak(w.word));}
   else if(type==='reverse'){const o=distractors(w,'word');
     arena(w,`<div class="qword" style="font-size:2rem">${w.hebrew}</div><div class="muted">בחר/י באנגלית</div><div class="opts">${optRow(o,'word',w.id)}</div>`,14000);}
   else if(type==='listen'){const o=distractors(w,'hebrew');
     arena(w,`<button class="btn" style="width:auto;padding:14px 26px;margin:6px auto" onclick="window._spk('${esc(w.word)}')">🔊 שמע/י שוב</button><div class="muted">מה שמעת?</div><div class="opts">${optRow(o,'hebrew',w.id)}</div>`,14000,()=>setTimeout(()=>speak(w.word),300));}
-  else if(type==='emoji'){const o=distractors(w,'word');
+  else if(type==='emoji'){const ce=emojiFor(w);const seen=new Set([w.word]);const out=[w];
+    for(const x of shuffle(WORDS)){if(out.length>=4)break;if(x.id===w.id||seen.has(x.word))continue;if(emojiFor(x)===ce||x.hebrew===w.hebrew)continue;seen.add(x.word);out.push(x);}
+    const o=shuffle(out);
     arena(w,`<div style="font-size:76px">${emojiFor(w)}</div><div class="muted">איזו מילה זו?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,14000);}
   else if(type==='fillblank'){const o=distractors(w,'word');
     const re=new RegExp('\\b'+w.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
@@ -420,7 +425,8 @@ function battleRound(){
     arena(w,`<div dir="ltr" style="direction:ltr;unicode-bidi:isolate;text-align:center;font-size:1.35rem;line-height:1.7;font-weight:700">${blanked}</div><div class="muted">איזו מילה משלימה את המשפט?</div><div class="opts">${optRow(o,'word',w.id)}</div>`,17000);}
   else if(type==='scramble'){const letters=shuffle(w.word.toLowerCase().split(''));
     arena(w,`<div class="muted">${w.hebrew} — סדר/י את המילה</div><button class="speaker" onclick="window._spk('${esc(w.word)}')">🔊</button>
-      <div class="slot" id="bslot" dir="ltr" style="direction:ltr"></div><div class="tiles" id="btiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="bAddL(this)">${l}</button>`).join('')}</div>`,22000);
+      <div class="slot" id="bslot" dir="ltr" style="direction:ltr"></div><div class="tiles" id="btiles">${letters.map(l=>`<button class="tile" data-l="${l}" onclick="bAddL(this)">${l}</button>`).join('')}</div>
+      <button class="btn ghost" style="width:auto;padding:9px 18px;margin-top:6px" onclick="bClr()">↺ נקה</button>`,22000);
     window._bcur='';window._btar=w.word.toLowerCase();window._bwid=w.id;}
   else if(type==='spell'){
     arena(w,`<div class="muted">${w.hebrew} — כתבו באנגלית</div><button class="btn" style="width:auto;padding:12px 22px;margin:4px auto" onclick="window._spk('${esc(w.word)}')">🔊 שמע/י</button>
@@ -453,6 +459,7 @@ window.hint=function(){const w=byId[BT&&BT.cur];if(!w)return;const box=el('hintb
     speak(s);
   }else{box.innerHTML='<div style="background:#141a45;border:1px solid #3a4699;border-radius:12px;padding:12px;margin-top:6px"><b style="color:var(--gold)">'+w.word+'</b> — '+w.hebrew+'</div>';speak(w.word);}
 };
+window.bClr=function(){if(BT.answered)return;window._bcur='';const s=el('bslot');if(s){s.innerHTML='';s.style.borderColor='';}const tl=el('btiles');if(tl)[...tl.children].forEach(b=>b.style.visibility='visible');sfx('click');};
 window.bAddL=function(b){if(BT.answered)return;b.style.visibility='hidden';window._bcur+=b.dataset.l;
   const s=el('bslot');const c=document.createElement('span');c.className='slotchip';c.textContent=b.dataset.l;s.appendChild(c);sfx('click');
   if(window._bcur.length===window._btar.length){const ok=window._bcur===window._btar;s.style.borderColor=ok?'#25f4a0':'#ff4d6d';
@@ -546,7 +553,6 @@ window.claimMile=function(i){const m=ROAD[i];if(!m||S.claimed.includes(i)||S.sta
 function screenPractice(){sfx('click');
   show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenHome()">‹ חזרה</a></div>
    <div class="panel center"><h2>תרגול חופשי 🎮</h2><p class="muted">בלי לחץ, בלי טיימר</p>
-    <button class="btn" onclick="soloScramble()">🔀 בניית מילה מאותיות</button><div style="height:8px"></div>
     <button class="btn" onclick="soloMemory()">🧠 זיכרון</button>
    </div></div>`);}
 function practiceWrap(inner,title){show(`<div class="screen active"><div class="center" style="margin:6px 0"><a class="link" onclick="screenPractice()">‹ חזרה</a></div>
@@ -678,7 +684,7 @@ window.parentGate=function(){sfx('click');
     <input id="pin" inputmode="numeric" maxlength="4" style="text-align:center;font-size:1.6rem;letter-spacing:8px" placeholder="••••">
     <div style="height:12px"></div><button class="btn" onclick="checkPin()">כניסה</button><p id="pmsg" style="color:var(--bad)"></p></div></div>`);
   setTimeout(()=>{const p=el('pin');if(p)p.focus();},200);};
-window.checkPin=function(){if($('#pin').value===S.profile.pin)screenParent();else $('#pmsg').textContent='קוד שגוי';};
+window.checkPin=function(){const pin=S.profile.pin||'2222';if($('#pin').value===pin)screenParent();else $('#pmsg').textContent='קוד שגוי';};
 window.setPin=function(){const v=($('#newpin').value||'').trim();if(!/^\d{4}$/.test(v)){$('#pinok').textContent='צריך בדיוק 4 ספרות';return;}S.profile.pin=v;save();sfx('correct');$('#pinok').textContent='הקוד עודכן ל-'+v+' ✓';};
 function unitTheme(u){return {1:'משפחה · ביגוד · זמן',2:'גוף · קמפינג · כיוונים',3:'אוכל · ירקות · בית ספר',4:'אנשים · ספורט · אמנות',5:'בית · מוזיקה · לוח שנה'}[u]||('יחידה '+u);}
 function screenParent(){
@@ -695,7 +701,7 @@ function screenParent(){
     return `<div style="margin:8px 0"><div style="display:flex;justify-content:space-between"><span>${catHe(c)}</span><span class="muted">${v.m}/${v.t}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`;}).join('');
   let lastPlayed='עדיין לא שיחקה';try{if(S.stats.lastDay)lastPlayed=new Date(S.stats.lastDay).toLocaleDateString('he-IL');}catch(e){}
   let rec;
-  if(seen===0)rec='יערה עוד לא התחילה. קרב אחד היום יתחיל את הרצף 🚀';
+  if(seen===0)rec=S.profile.name+' עוד לא התחילה. קרב אחד היום יתחיל את הרצף 🚀';
   else if(weak.length>=8)rec=`יש ${weak.length} מילים שמאתגרות אותה — המשחק כבר מגיש אותן יותר. שווה גם סבב "תרגול".`;
   else if(acc>=85)rec='דיוק גבוה מאוד — היא מוכנה למילים חדשות, שנפתחות אוטומטית.';
   else if(S.stats.streak===0)rec='כדאי לשמור על רצף יומי — אפילו קרב אחד ביום עושה הבדל.';
